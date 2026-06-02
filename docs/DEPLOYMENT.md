@@ -3,14 +3,22 @@
 Deployed to a hackathon-credit GCP project on **2026-06-02**. Region **asia-south1** (Mumbai),
 Gemini via **Vertex AI** (no API key — uses the runtime service account).
 
-## What's live
+## What's live — **PUBLIC** ✅
+
+**Try it:** **https://odyssey-concierge-4ha6ffo6hq-el.a.run.app** (ADK chat UI — pick `concierge`, ask for a trip).
 
 | Service | URL | Access | Notes |
 |---|---|---|---|
-| `odyssey-flight` | https://odyssey-flight-4ha6ffo6hq-el.a.run.app | **private** | A2A card + UCP routes; card advertises its public URL |
-| `odyssey-hotel` | https://odyssey-hotel-4ha6ffo6hq-el.a.run.app | **private** | same |
-| `odyssey-activity` | https://odyssey-activity-4ha6ffo6hq-el.a.run.app | **private** | same |
-| `odyssey-concierge` | https://odyssey-concierge-4ha6ffo6hq-el.a.run.app | **private** | ADK dev chat UI (`server:app` → `get_fast_api_app`) |
+| `odyssey-flight` | https://odyssey-flight-4ha6ffo6hq-el.a.run.app | **public** | A2A card + UCP routes; card advertises its public URL |
+| `odyssey-hotel` | https://odyssey-hotel-4ha6ffo6hq-el.a.run.app | **public** | same |
+| `odyssey-activity` | https://odyssey-activity-4ha6ffo6hq-el.a.run.app | **public** | same |
+| `odyssey-concierge` | https://odyssey-concierge-4ha6ffo6hq-el.a.run.app | **public** | ADK dev chat UI (`server:app` → `get_fast_api_app`) |
+
+**Verified live (unauthenticated, 2026-06-02):** the concierge planned a $1507 Bali trip, the HITL
+confirmation gate fired and was honored, and the booking completed with 3 UCP confirmation codes —
+with **real cross-service calls** (merchant logs show `GET /.well-known/agent-card.json`, `GET
+/.well-known/ucp`, `POST /mcp` from the concierge). Public access required relaxing the org policy
+`iam.allowedPolicyMemberDomains` (Allow-All, project-scoped) + `allUsers` run.invoker on all 4 services.
 
 - **Project:** `odyssey-hackathon-498211` · **Region:** `asia-south1` · **Billing:** linked (credit account).
 - **Image:** one shared image `asia-south1-docker.pkg.dev/odyssey-hackathon-498211/odyssey/merchants:latest`

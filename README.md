@@ -63,6 +63,12 @@ For judges evaluating Odyssey without credentials:
 
 ## Status
 
+**🌐 Live demo (public):** **https://odyssey-concierge-4ha6ffo6hq-el.a.run.app** — ADK chat UI on
+Google Cloud Run (asia-south1), Gemini via Vertex AI. Pick `concierge` and ask for a trip, e.g.
+*"Plan a 5-day Bali trip from JFK for 2, Sep 1–6 2026, budget $2500, beachy and foodie."* Payments
+are simulated. (Cloud Run scale-to-zero, so the first request may cold-start a few seconds.)
+See [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md).
+
 **MVP implemented** — a full flight + hotel + activities trip books end-to-end in SEED mode
 (intent → A2A negotiation → UCP `create_checkout` → confirmation-gated UCP `complete_checkout`).
 **41 tests passing, 2 skipped** (the 2 skips are the live-LLM tests that need a `GOOGLE_API_KEY`).
