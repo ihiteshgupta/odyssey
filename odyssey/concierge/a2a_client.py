@@ -39,54 +39,57 @@ def _request_payload(
     }
 
 
-def _is_offer_dict(d: object) -> bool:
-    """True if *d* looks like a NegotiationResponse (find_offers output)."""
-    return isinstance(d, dict) and ("fits" in d or "offers" in d)
+def _coerce_offer_dict(d: object) -> dict | None:
+    """Return the NegotiationResponse dict from *d*, unwrapping known nestings.
+
+    ADK surfaces the find_offers result over A2A as a DataPart whose ``.data`` is
+    ``{"name": "find_offers", "response": {<offer dict>}}``, and the merchant LLM's
+    text echo wraps it under ``find_offers_response``. The offer dict itself has
+    ``fits``/``offers`` keys. We accept direct, ``response``, or ``find_offers_response``.
+    """
+    if not isinstance(d, dict):
+        return None
+    if "fits" in d or "offers" in d:
+        return d
+    for key in ("response", "find_offers_response", "result"):
+        inner = d.get(key)
+        if isinstance(inner, dict) and ("fits" in inner or "offers" in inner):
+            return inner
+    return None
 
 
 def _extract_json(text: str) -> dict | None:
-    """Parse the first JSON object from *text* that looks like an offer dict."""
+    """Parse the first JSON object from *text* that yields an offer dict."""
     text = (text or "").strip()
-    # Try the largest brace span first, then any object.
     for pat in (r"\{.*\}", r"\{.*?\}"):
         m = re.search(pat, text, re.DOTALL)
         if not m:
             continue
         try:
-            d = json.loads(m.group(0))
+            got = _coerce_offer_dict(json.loads(m.group(0)))
         except (json.JSONDecodeError, ValueError):
             continue
-        if _is_offer_dict(d):
-            return d
+        if got is not None:
+            return got
     return None
 
 
 def _parts_to_result(parts: list) -> dict | None:
     """Scan ``Part`` objects for the find_offers result.
 
-    Handles three shapes: a structured ``DataPart`` (``.data``), a tool
-    ``function_response`` (``.response`` — the find_offers dict, possibly wrapped
-    in ``{"result": ...}``), and a ``TextPart`` whose text contains the JSON.
-    Only returns a dict that actually looks like a NegotiationResponse.
+    The reliable source is the tool-response ``DataPart`` (``.data.response``);
+    a ``TextPart`` JSON echo is a fallback. Returns the offer dict or None.
     """
     for part in parts or []:
         root = getattr(part, "root", part)
-        data = getattr(root, "data", None)
-        if _is_offer_dict(data):
-            return data  # type: ignore[return-value]
-        fr = getattr(root, "function_response", None) or getattr(root, "functionResponse", None)
-        if fr is not None:
-            resp = getattr(fr, "response", None)
-            if isinstance(resp, dict):
-                inner = resp.get("result")
-                cand = inner if _is_offer_dict(inner) else resp
-                if _is_offer_dict(cand):
-                    return cand
+        got = _coerce_offer_dict(getattr(root, "data", None))
+        if got is not None:
+            return got
         text = getattr(root, "text", None)
         if text:
-            d = _extract_json(text)
-            if d is not None:
-                return d
+            got = _extract_json(text)
+            if got is not None:
+                return got
     return None
 
 
