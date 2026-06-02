@@ -1,4 +1,12 @@
-from odyssey.common.types import Money, Offer, Intent, NegotiationRequest, NegotiationResponse, Vertical
+from odyssey.common.types import (
+    Intent,
+    Money,
+    NegotiationRequest,
+    NegotiationResponse,
+    Offer,
+    Vertical,
+)
+
 
 def test_money_add_same_currency():
     assert (Money("USD", 100.0) + Money("USD", 50.5)) == Money("USD", 150.5)
