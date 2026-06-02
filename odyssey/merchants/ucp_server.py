@@ -4,6 +4,8 @@ import uuid
 
 from ap2.models.mandate import CartMandate, PaymentMandate  # noqa: F401 (used via model_validate)
 from fastapi import FastAPI, Request
+from starlette.requests import Request as StarletteRequest
+from starlette.responses import JSONResponse
 
 from odyssey.common.types import Vertical
 from odyssey.merchants.catalog_source import CatalogSource
@@ -106,6 +108,28 @@ def _ucp_doc() -> dict:
         "payment_handlers": {"com.google.pay": {}},
         "signing_keys": [],
     }
+
+
+def attach_ucp_routes(app, name: str, vertical: Vertical, source: CatalogSource) -> None:
+    """Attach GET /.well-known/ucp and POST /mcp to an existing Starlette app (the to_a2a app)."""
+    dispatch = build_dispatch(name, vertical, source)
+
+    async def _well_known(request: StarletteRequest):
+        return JSONResponse(_ucp_doc())
+
+    async def _mcp(request: StarletteRequest):
+        body = await request.json()
+        params = body.get("params", {})
+        return JSONResponse(
+            {
+                "jsonrpc": "2.0",
+                "id": body.get("id"),
+                "result": dispatch(params.get("name"), params.get("arguments", {})),
+            }
+        )
+
+    app.add_route("/.well-known/ucp", _well_known, methods=["GET"])
+    app.add_route("/mcp", _mcp, methods=["POST"])
 
 
 def make_ucp_app(name: str, vertical: Vertical, source: CatalogSource) -> FastAPI:
