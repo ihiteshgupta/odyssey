@@ -1,6 +1,10 @@
 from __future__ import annotations
 
+import asyncio
+import os
+
 from fastapi.testclient import TestClient as _UcpTestClient
+from google.adk.a2a.utils.agent_card_builder import AgentCardBuilder
 from google.adk.a2a.utils.agent_to_a2a import to_a2a
 from google.adk.agents import LlmAgent
 from google.adk.tools import FunctionTool
@@ -12,6 +16,14 @@ from odyssey.protocols.ucp_client import UCPClient
 
 MODEL = "gemini-2.5-flash"
 _PORT = {Vertical.FLIGHT: 8001, Vertical.HOTEL: 8002, Vertical.ACTIVITY: 8003}
+
+# Env vars each merchant reads at import time to stamp its own public URL into
+# the A2A agent card so remote consumers can reach the service on Cloud Run.
+_SELF_URL_ENV = {
+    Vertical.FLIGHT: "ODYSSEY_FLIGHT_URL",
+    Vertical.HOTEL: "ODYSSEY_HOTEL_URL",
+    Vertical.ACTIVITY: "ODYSSEY_ACTIVITY_URL",
+}
 
 
 def _inproc_ucp(vertical: Vertical) -> UCPClient:
@@ -65,7 +77,18 @@ def _make_merchant_agent(vertical: Vertical) -> LlmAgent:
 
 
 def make_merchant_app(vertical: Vertical, port: int):
-    app = to_a2a(_make_merchant_agent(vertical), port=port)
+    agent = _make_merchant_agent(vertical)
+    public_url = os.environ.get(_SELF_URL_ENV[vertical])
+    if public_url:
+        # On Cloud Run, stamp the card with the public HTTPS URL so consumers
+        # that resolve the agent card get the correct RPC endpoint.
+        agent_card = asyncio.run(
+            AgentCardBuilder(agent=agent, rpc_url=public_url.rstrip("/")).build()
+        )
+        app = to_a2a(agent, port=port, agent_card=agent_card)
+    else:
+        # Local dev: let to_a2a build the card using host/port defaults.
+        app = to_a2a(agent, port=port)
     attach_ucp_routes(app, f"{vertical.value} merchant", vertical, make_source(vertical))
     return app
 
