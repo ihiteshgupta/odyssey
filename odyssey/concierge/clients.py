@@ -16,6 +16,11 @@ _URL_ENV = {
     Vertical.ACTIVITY: "ODYSSEY_ACTIVITY_URL",
 }
 
+# Cache in-process UCP clients so that checkout state (carts dict) persists across
+# plan_trip → finalize_trip within the same process.  Keyed by vertical value so each
+# merchant gets its own stable app instance.
+_in_process_clients: dict[Vertical, UCPClient] = {}
+
 
 def merchant_url(vertical: Vertical) -> str | None:
     return os.environ.get(_URL_ENV[vertical])
@@ -25,7 +30,8 @@ def ucp_client_for(vertical: Vertical) -> UCPClient:
     """Return a UCPClient for the merchant.
 
     Uses an httpx client to the live merchant URL if set and reachable, otherwise falls back to
-    an in-process UCP app (suitable for tests and SEED mode demos).
+    an in-process UCP app (suitable for tests and SEED mode demos).  The in-process app is
+    cached per-vertical so checkout state persists between plan_trip and finalize_trip calls.
     """
     url = merchant_url(vertical)
     if url:
@@ -35,8 +41,10 @@ def ucp_client_for(vertical: Vertical) -> UCPClient:
             return UCPClient(transport=t)
         except Exception:
             pass
-    return UCPClient(
-        transport=_UcpTestClient(
-            make_ucp_app(f"{vertical.value} merchant", vertical, make_source(vertical))
+    if vertical not in _in_process_clients:
+        _in_process_clients[vertical] = UCPClient(
+            transport=_UcpTestClient(
+                make_ucp_app(f"{vertical.value} merchant", vertical, make_source(vertical))
+            )
         )
-    )
+    return _in_process_clients[vertical]
