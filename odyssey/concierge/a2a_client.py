@@ -151,8 +151,24 @@ def a2a_negotiate(
     produced by ``odyssey.merchants.agents.negotiate_offers``.
 
     Requires a running A2A-compatible merchant agent at *url* and a valid
-    ``GOOGLE_API_KEY`` env-var for the agent's Gemini backend.
+    Gemini backend (Vertex AI or ``GOOGLE_API_KEY``) for the agent.
+
+    Loop-safe: callers like the ADK concierge invoke this from inside a running
+    event loop, where ``asyncio.run`` raises 'cannot be called from a running
+    event loop'. In that case we run the coroutine on a fresh loop in a worker
+    thread so the real cross-service A2A call actually happens (instead of the
+    request_offers in-process fallback).
     """
-    return asyncio.run(
-        _negotiate_async(url, vertical, intent, slice_amount, context_id)
-    )
+    def _run() -> dict:
+        return asyncio.run(
+            _negotiate_async(url, vertical, intent, slice_amount, context_id)
+        )
+
+    try:
+        asyncio.get_running_loop()
+    except RuntimeError:
+        return _run()
+    import concurrent.futures
+
+    with concurrent.futures.ThreadPoolExecutor(max_workers=1) as ex:
+        return ex.submit(_run).result()
