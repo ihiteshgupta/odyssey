@@ -104,7 +104,7 @@ async def _negotiate_async(
         )
 
         last_text = ""
-        async for event in await client.send_message(msg):
+        async for event in client.send_message(msg):
             # event is either tuple[Task, UpdateEvent|None] or Message
             if isinstance(event, tuple):
                 task, _update = event
