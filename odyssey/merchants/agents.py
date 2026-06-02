@@ -76,15 +76,34 @@ def _make_merchant_agent(vertical: Vertical) -> LlmAgent:
     )
 
 
+def _build_card_sync(agent: LlmAgent, rpc_url: str):
+    """Build the A2A AgentCard, working whether or not an event loop is already running.
+
+    Merchants import this module at process startup (no loop) — `asyncio.run` is fine.
+    The concierge imports it lazily INSIDE ADK's request handler (a running loop), where
+    `asyncio.run` raises 'cannot be called from a running event loop'; in that case we run
+    the async build in a fresh loop on a worker thread.
+    """
+    def _run() -> object:
+        return asyncio.run(AgentCardBuilder(agent=agent, rpc_url=rpc_url).build())
+
+    try:
+        asyncio.get_running_loop()
+    except RuntimeError:
+        return _run()
+    import concurrent.futures
+
+    with concurrent.futures.ThreadPoolExecutor(max_workers=1) as ex:
+        return ex.submit(_run).result()
+
+
 def make_merchant_app(vertical: Vertical, port: int):
     agent = _make_merchant_agent(vertical)
     public_url = os.environ.get(_SELF_URL_ENV[vertical])
     if public_url:
         # On Cloud Run, stamp the card with the public HTTPS URL so consumers
         # that resolve the agent card get the correct RPC endpoint.
-        agent_card = asyncio.run(
-            AgentCardBuilder(agent=agent, rpc_url=public_url.rstrip("/")).build()
-        )
+        agent_card = _build_card_sync(agent, public_url.rstrip("/"))
         app = to_a2a(agent, port=port, agent_card=agent_card)
     else:
         # Local dev: let to_a2a build the card using host/port defaults.
