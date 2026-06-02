@@ -15,10 +15,18 @@ Gemini via **Vertex AI** (no API key — uses the runtime service account).
 | `odyssey-concierge` | https://odyssey-concierge-4ha6ffo6hq-el.a.run.app | **public** | ADK dev chat UI (`server:app` → `get_fast_api_app`) |
 
 **Verified live (unauthenticated, 2026-06-02):** the concierge planned a $1507 Bali trip, the HITL
-confirmation gate fired and was honored, and the booking completed with 3 UCP confirmation codes —
-with **real cross-service calls** (merchant logs show `GET /.well-known/agent-card.json`, `GET
-/.well-known/ucp`, `POST /mcp` from the concierge). Public access required relaxing the org policy
-`iam.allowedPolicyMemberDomains` (Allow-All, project-scoped) + `allUsers` run.invoker on all 4 services.
+confirmation gate fired and was honored, and the booking completed with 3 UCP confirmation codes.
+Public access required relaxing the org policy `iam.allowedPolicyMemberDomains` (Allow-All,
+project-scoped) + `allUsers` run.invoker on all 4 services.
+
+**Real cross-process A2A negotiation (verified):** the concierge splits the budget (45/40/15) and
+negotiates each slice with a *separate* merchant Cloud Run service over A2A. Concierge logs show
+`negotiate[hotel] via A2A slice=1000 fits=True` (not the in-process fallback), and merchant logs show
+the inbound A2A message endpoint `POST / 200` + `convert_event_to_a2a_message`. The merchant agent runs
+its own Gemini call, returns the `find_offers` result as an A2A DataPart, and the concierge assembles +
+books over UCP (`POST /mcp`). This required fixing a 3-bug cascade the fallback had masked (asyncio.run
+inside ADK's loop → erroneous `await` on the send_message async-generator → find_offers result nested
+under `.response`).
 
 - **Project:** `odyssey-hackathon-498211` · **Region:** `asia-south1` · **Billing:** linked (credit account).
 - **Image:** one shared image `asia-south1-docker.pkg.dev/odyssey-hackathon-498211/odyssey/merchants:latest`
