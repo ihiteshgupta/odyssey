@@ -39,20 +39,54 @@ def _request_payload(
     }
 
 
-def _extract_json(text: str) -> dict:
-    """Parse the first JSON object from *text* (tolerant fallback)."""
+def _is_offer_dict(d: object) -> bool:
+    """True if *d* looks like a NegotiationResponse (find_offers output)."""
+    return isinstance(d, dict) and ("fits" in d or "offers" in d)
+
+
+def _extract_json(text: str) -> dict | None:
+    """Parse the first JSON object from *text* that looks like an offer dict."""
     text = (text or "").strip()
-    m = re.search(r"\{.*\}", text, re.DOTALL)
-    return json.loads(m.group(0) if m else text)
+    # Try the largest brace span first, then any object.
+    for pat in (r"\{.*\}", r"\{.*?\}"):
+        m = re.search(pat, text, re.DOTALL)
+        if not m:
+            continue
+        try:
+            d = json.loads(m.group(0))
+        except (json.JSONDecodeError, ValueError):
+            continue
+        if _is_offer_dict(d):
+            return d
+    return None
 
 
 def _parts_to_result(parts: list) -> dict | None:
-    """Scan a list of ``Part`` objects; return first DataPart.data or None."""
+    """Scan ``Part`` objects for the find_offers result.
+
+    Handles three shapes: a structured ``DataPart`` (``.data``), a tool
+    ``function_response`` (``.response`` — the find_offers dict, possibly wrapped
+    in ``{"result": ...}``), and a ``TextPart`` whose text contains the JSON.
+    Only returns a dict that actually looks like a NegotiationResponse.
+    """
     for part in parts or []:
         root = getattr(part, "root", part)
         data = getattr(root, "data", None)
-        if data is not None:
+        if _is_offer_dict(data):
             return data  # type: ignore[return-value]
+        fr = getattr(root, "function_response", None) or getattr(root, "functionResponse", None)
+        if fr is not None:
+            resp = getattr(fr, "response", None)
+            if isinstance(resp, dict):
+                inner = resp.get("result")
+                cand = inner if _is_offer_dict(inner) else resp
+                if _is_offer_dict(cand):
+                    return cand
+        text = getattr(root, "text", None)
+        if text:
+            d = _extract_json(text)
+            if d is not None:
+                return d
     return None
 
 
@@ -134,7 +168,12 @@ async def _negotiate_async(
                     if text:
                         last_text = text
 
-        return _extract_json(last_text)
+        result = _extract_json(last_text)
+        if result is None:
+            raise ValueError(
+                "A2A merchant returned no parseable NegotiationResponse"
+            )
+        return result
 
 
 def a2a_negotiate(

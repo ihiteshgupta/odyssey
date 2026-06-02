@@ -68,9 +68,10 @@ def _make_merchant_agent(vertical: Vertical) -> LlmAgent:
         name=f"{vertical.value}_merchant",
         model=MODEL,
         instruction=(
-            f"You are a {vertical.value} merchant. When asked for offers within a "
-            "budget slice, call find_offers and return its JSON result verbatim as your "
-            "final response. Never invent prices."
+            f"You are a {vertical.value} merchant agent. ALWAYS call the find_offers tool "
+            "with the requested query and budget_slice, then respond with ONLY the tool's "
+            "raw JSON object as your entire final message — no prose, no markdown, no code "
+            "fences, nothing before or after the '{...}'. Never invent prices or fields."
         ),
         tools=[FunctionTool(find_offers)],
     )
