@@ -63,9 +63,16 @@ For judges evaluating Odyssey without credentials:
 
 ## Status
 
-Design phase. See:
+**MVP implemented** — a full flight + hotel + activities trip books end-to-end in SEED mode
+(intent → A2A negotiation → UCP `create_checkout` → confirmation-gated UCP `complete_checkout`).
+**41 tests passing, 2 skipped** (the 2 skips are the live-LLM tests that need a `GOOGLE_API_KEY`).
+Consciously deferred to Phase 2: CartMandate-expiry re-quote, merchant-timeout re-plan, multi-round
+counter-offers, dual agent-card-path probing.
+
+See:
 - **Design spec:** [`docs/superpowers/specs/2026-06-02-odyssey-design.md`](docs/superpowers/specs/2026-06-02-odyssey-design.md)
 - **Grounded protocol reference:** [`docs/PROTOCOL-REFERENCE.md`](docs/PROTOCOL-REFERENCE.md)
+- **Implementation plan:** [`docs/superpowers/plans/2026-06-02-odyssey-build.md`](docs/superpowers/plans/2026-06-02-odyssey-build.md)
 
 ## Stack
 
