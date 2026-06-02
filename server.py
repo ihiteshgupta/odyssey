@@ -9,9 +9,15 @@ import os
 
 from google.adk.cli.fast_api import get_fast_api_app
 
+# Cloud Trace: emit the multi-agent call waterfall (concierge → A2A merchant agents,
+# tool calls, Gemini spans) to Cloud Trace when running on GCP. Toggled by env so local
+# runs stay offline. On Cloud Run set ODYSSEY_TRACE_TO_CLOUD=TRUE.
+_TRACE = os.environ.get("ODYSSEY_TRACE_TO_CLOUD", "").upper() == "TRUE"
+
 app = get_fast_api_app(
     agents_dir="deploy_agents",
     web=True,
     host="0.0.0.0",
     port=int(os.environ.get("PORT", "8080")),
+    trace_to_cloud=_TRACE,
 )
