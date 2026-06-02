@@ -1,0 +1,4 @@
+name: projects/odyssey-hackathon-498211/policies/iam.allowedPolicyMemberDomains
+spec:
+  rules:
+  - allowAll: true
