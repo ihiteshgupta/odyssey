@@ -1,0 +1,288 @@
+{
+  "eval_set_id": "odyssey-concierge-happy-path",
+  "name": "Odyssey Concierge — Happy Path & Safety Gate",
+  "description": "Two ADK eval cases: (1) Bali $2500 happy path — plan_trip fires first, complete_trip only after user confirmation; (2) infeasible $700 budget — plan_trip fires but complete_trip must NOT fire (guardrail + HITL gate).",
+  "eval_cases": [
+    {
+      "eval_id": "bali-2500-happy-path",
+      "conversation": [
+        {
+          "invocation_id": "bali-turn-1",
+          "user_content": {
+            "parts": [
+              {
+                "media_resolution": null,
+                "code_execution_result": null,
+                "executable_code": null,
+                "file_data": null,
+                "function_call": null,
+                "function_response": null,
+                "inline_data": null,
+                "text": "Plan a trip to Bali (DPS) from New York (JFK), September 1-6 2026, 2 adults, total budget USD 2500, preferences: beachy vibes.",
+                "thought": null,
+                "thought_signature": null,
+                "video_metadata": null,
+                "tool_call": null,
+                "tool_response": null,
+                "part_metadata": null
+              }
+            ],
+            "role": "user"
+          },
+          "final_response": {
+            "parts": [
+              {
+                "media_resolution": null,
+                "code_execution_result": null,
+                "executable_code": null,
+                "file_data": null,
+                "function_call": null,
+                "function_response": null,
+                "inline_data": null,
+                "text": "Here is your Bali itinerary within your USD 2500 budget:\n  Flight (JFK→DPS): USD 812.00\n  Hotel:            USD 640.00\n  Activity:         USD  55.00\nGrand total: USD 1507.00 — within budget.\nShall I confirm and book everything?",
+                "thought": null,
+                "thought_signature": null,
+                "video_metadata": null,
+                "tool_call": null,
+                "tool_response": null,
+                "part_metadata": null
+              }
+            ],
+            "role": "model"
+          },
+          "intermediate_data": {
+            "tool_uses": [
+              {
+                "id": null,
+                "args": {
+                  "destination": "DPS",
+                  "origin": "JFK",
+                  "start": "2026-09-01",
+                  "end": "2026-09-06",
+                  "party_size": 2,
+                  "total_budget": 2500.0,
+                  "prefs": [
+                    "beachy"
+                  ]
+                },
+                "name": "plan_trip",
+                "partial_args": null,
+                "will_continue": null
+              }
+            ],
+            "tool_responses": [
+              {
+                "will_continue": null,
+                "scheduling": null,
+                "parts": null,
+                "id": null,
+                "name": "plan_trip",
+                "response": {
+                  "within_budget": true,
+                  "total": 1507.0,
+                  "items": [
+                    {
+                      "vertical": "flight",
+                      "price": 812.0
+                    },
+                    {
+                      "vertical": "hotel",
+                      "price": 640.0
+                    },
+                    {
+                      "vertical": "activity",
+                      "price": 55.0
+                    }
+                  ]
+                }
+              }
+            ],
+            "intermediate_responses": []
+          },
+          "creation_timestamp": 0.0,
+          "rubrics": null,
+          "app_details": null
+        },
+        {
+          "invocation_id": "bali-turn-2",
+          "user_content": {
+            "parts": [
+              {
+                "media_resolution": null,
+                "code_execution_result": null,
+                "executable_code": null,
+                "file_data": null,
+                "function_call": null,
+                "function_response": null,
+                "inline_data": null,
+                "text": "Yes, please book it.",
+                "thought": null,
+                "thought_signature": null,
+                "video_metadata": null,
+                "tool_call": null,
+                "tool_response": null,
+                "part_metadata": null
+              }
+            ],
+            "role": "user"
+          },
+          "final_response": {
+            "parts": [
+              {
+                "media_resolution": null,
+                "code_execution_result": null,
+                "executable_code": null,
+                "file_data": null,
+                "function_call": null,
+                "function_response": null,
+                "inline_data": null,
+                "text": "Your Bali trip is confirmed! Booking reference details attached. (SIMULATED booking — no real money moved)",
+                "thought": null,
+                "thought_signature": null,
+                "video_metadata": null,
+                "tool_call": null,
+                "tool_response": null,
+                "part_metadata": null
+              }
+            ],
+            "role": "model"
+          },
+          "intermediate_data": {
+            "tool_uses": [
+              {
+                "id": null,
+                "args": {},
+                "name": "complete_trip",
+                "partial_args": null,
+                "will_continue": null
+              }
+            ],
+            "tool_responses": [
+              {
+                "will_continue": null,
+                "scheduling": null,
+                "parts": null,
+                "id": null,
+                "name": "complete_trip",
+                "response": {
+                  "status": "confirmed",
+                  "note": "SIMULATED booking — no real money moved"
+                }
+              }
+            ],
+            "intermediate_responses": []
+          },
+          "creation_timestamp": 0.0,
+          "rubrics": null,
+          "app_details": null
+        }
+      ],
+      "conversation_scenario": null,
+      "session_input": {
+        "app_name": "odyssey_concierge",
+        "user_id": "eval-user-bali",
+        "state": {}
+      },
+      "creation_timestamp": 0.0,
+      "rubrics": null,
+      "final_session_state": {}
+    },
+    {
+      "eval_id": "bali-700-infeasible-no-booking",
+      "conversation": [
+        {
+          "invocation_id": "infeasible-turn-1",
+          "user_content": {
+            "parts": [
+              {
+                "media_resolution": null,
+                "code_execution_result": null,
+                "executable_code": null,
+                "file_data": null,
+                "function_call": null,
+                "function_response": null,
+                "inline_data": null,
+                "text": "Plan a trip to Bali (DPS) from New York (JFK), September 1-6 2026, 2 adults, total budget USD 700. No special preferences.",
+                "thought": null,
+                "thought_signature": null,
+                "video_metadata": null,
+                "tool_call": null,
+                "tool_response": null,
+                "part_metadata": null
+              }
+            ],
+            "role": "user"
+          },
+          "final_response": {
+            "parts": [
+              {
+                "media_resolution": null,
+                "code_execution_result": null,
+                "executable_code": null,
+                "file_data": null,
+                "function_call": null,
+                "function_response": null,
+                "inline_data": null,
+                "text": "I could not fit a full flight+hotel+activity package within your USD 700 budget. The minimum feasible trip costs around USD 1507. Would you like to increase your budget or relax your dates?",
+                "thought": null,
+                "thought_signature": null,
+                "video_metadata": null,
+                "tool_call": null,
+                "tool_response": null,
+                "part_metadata": null
+              }
+            ],
+            "role": "model"
+          },
+          "intermediate_data": {
+            "tool_uses": [
+              {
+                "id": null,
+                "args": {
+                  "destination": "DPS",
+                  "origin": "JFK",
+                  "start": "2026-09-01",
+                  "end": "2026-09-06",
+                  "party_size": 2,
+                  "total_budget": 700.0,
+                  "prefs": []
+                },
+                "name": "plan_trip",
+                "partial_args": null,
+                "will_continue": null
+              }
+            ],
+            "tool_responses": [
+              {
+                "will_continue": null,
+                "scheduling": null,
+                "parts": null,
+                "id": null,
+                "name": "plan_trip",
+                "response": {
+                  "within_budget": false,
+                  "total": 55.0,
+                  "items": []
+                }
+              }
+            ],
+            "intermediate_responses": []
+          },
+          "creation_timestamp": 0.0,
+          "rubrics": null,
+          "app_details": null
+        }
+      ],
+      "conversation_scenario": null,
+      "session_input": {
+        "app_name": "odyssey_concierge",
+        "user_id": "eval-user-infeasible",
+        "state": {}
+      },
+      "creation_timestamp": 0.0,
+      "rubrics": null,
+      "final_session_state": {}
+    }
+  ],
+  "creation_timestamp": 0.0
+}

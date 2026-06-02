@@ -1,0 +1,45 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    name: Lint + Test (Python 3.12)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v3
+        with:
+          version: "latest"
+
+      - name: Install dependencies
+        run: uv pip install -e ".[dev]" --system
+
+      - name: Lint (ruff)
+        run: uv run ruff check .
+
+      - name: Test (offline suite — no LLM key required)
+        env:
+          ODYSSEY_DATA_MODE: SEED
+        run: uv run pytest -q
+        # The deterministic safety eval (tests/test_safety_eval.py) and all 43
+        # existing tests run fully offline in SEED mode. Tests marked with
+        # @pytest.mark.skipif(not os.environ.get("GOOGLE_API_KEY"), ...) are
+        # automatically skipped here — that is expected (2 skipped, all else passing).
+
+      # NOTE: The ADK happy-path evalset (evals/odyssey.evalset.json) is NOT run
+      # in CI because it requires a live Gemini/Vertex AI key. To run it locally:
+      #   export GOOGLE_API_KEY=<your-key>
+      #   export ODYSSEY_DATA_MODE=SEED
+      #   adk eval deploy_agents/concierge evals/odyssey.evalset.json
