@@ -67,7 +67,8 @@ def build_dispatch(name: str, vertical: Vertical, source: CatalogSource):
             if not key:
                 return {"error": "missing idempotency-key"}
             if key in seen_keys:
-                return {"order": {"status": "confirmed", "idempotent_replay": True}}
+                return {"order": {"status": "confirmed", "idempotent_replay": True,
+                                  "confirmation": f"OD-{(args.get('id') or '')[-6:].upper()}"}}
             cart = carts.get(args["id"])
             if op == "cancel_checkout":
                 seen_keys.add(key)

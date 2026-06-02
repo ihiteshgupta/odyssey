@@ -52,3 +52,19 @@ def test_complete_requires_idempotency_key():
     bad = _rpc("complete_checkout", {"meta": {"ucp-agent": "t"}, "id": created["checkout"]["id"],
                                      "checkout": {}})["result"]
     assert bad["error"] == "missing idempotency-key"
+
+
+def test_complete_checkout_idempotent_replay_returns_confirmation():
+    found = _rpc("search_catalog", {"query": "bali"})["result"]["products"]
+    created = _rpc("create_checkout", {"meta": {"ucp-agent": "t"},
+                                       "checkout": {"items": [{"id": found[0]["id"]}]}})["result"]
+    cid = created["checkout"]["id"]
+    cm = CartMandate.model_validate(created["checkout"]["cart_mandate"])
+    pm = build_payment_mandate(cart=cm, merchant_agent="hotel_merchant")
+    args = {"meta": {"ucp-agent": "t", "idempotency-key": "replay-key"},
+            "id": cid, "checkout": {"payment_mandate": pm.model_dump()}}
+    first = _rpc("complete_checkout", args)["result"]
+    second = _rpc("complete_checkout", args)["result"]  # same key → replay
+    assert first["order"]["status"] == "confirmed" and first["order"]["confirmation"].startswith("OD-")
+    assert second["order"].get("idempotent_replay") is True
+    assert second["order"]["confirmation"] == first["order"]["confirmation"]
