@@ -20,7 +20,7 @@ This is the first screen. Numbers marked `‹…›` are placeholders for artifa
 | Metric | Before (pre-optimization) | After (current) | Source |
 |---|---|---|---|
 | Real cross-process A2A negotiation | **Masked** — in-process fallback ran; looked green, never crossed services | **Live & verified** — `negotiate[hotel] via A2A slice=1000 fits=True` (not fallback) | `docs/DEPLOYMENT.md`; commits `88988d8` → `24d7030` → `1b80d5e` |
-| A2A trajectory eval | Falsely green (fallback hid the failure) | Honest → genuinely **1.0** on the happy-path trajectory | `evals/odyssey.evalset.json` (`adk eval`) |
+| ADK LLM-trajectory eval | Lexical match over a stale expected-trajectory | **Wired into CI** (`adk eval`); a live run flagged that the evalset's expected trajectory + ROUGE response-match need hardening — the **deterministic safety eval (below) is the green reliability gate** | `evals/odyssey.evalset.json`, `tests/test_safety_eval.py` |
 | A2A transient-failure resilience | **1 attempt → silent in-process mask** (the pattern that hid the cascade) | **Bounded retry + exponential backoff; `ODYSSEY_A2A_STRICT` surfaces persistent failures instead of masking** | `odyssey/concierge/negotiate.py`, `tests/test_a2a_resilience.py` |
 | Guardrail block-rate (unsafe checkouts denied) | `‹before-capture›` | **100% (6/6)** unsafe calls denied | `tests/test_safety_eval.py` |
 | False bookings (within-budget mismatch + empty cart) | `‹before-capture›` | **0** | `tests/test_safety_eval.py` |
@@ -76,7 +76,7 @@ A full multi-agent turn (concierge + 3 merchant Gemini calls + UCP assemble/book
 
 **Why honest-tests-first mattered.** Each bug, on its own, would have been hidden by the fallback: the agent kept "working" by quietly doing the in-process thing. The optimization discipline was to make the failure *visible* — surface the negotiation path in logs (`via A2A` vs `in-process`, commit `b0c8175`) and require the eval/deployment check to prove the call crossed a process boundary — before fixing anything.
 
-**Measured result.** From **falsely-green** (fallback hid the failure) → **honest** (the path is logged and the eval can tell A2A from fallback) → **genuinely passing**: on 2026-06-02 the concierge planned a $1507 Bali trip across three separate Cloud Run merchant services, the HITL gate fired and was honored, and the booking completed with 3 UCP confirmation codes — concierge logs showing `negotiate[hotel] via A2A slice=1000 fits=True` and merchant logs showing the inbound `POST / 200`. The happy-path trajectory eval now scores 1.0 because it's measuring the real thing.
+**Measured result.** From **falsely-green** (fallback hid the failure) → **honest** (the path is logged and the eval can tell A2A from fallback) → **genuinely passing**: on 2026-06-02 the concierge planned a $1507 Bali trip across three separate Cloud Run merchant services, the HITL gate fired and was honored, and the booking completed with 3 UCP confirmation codes — concierge logs showing `negotiate[hotel] via A2A slice=1000 fits=True` and merchant logs showing the inbound `POST / 200` — the real cross-process negotiation, verified end-to-end. (The deterministic safety eval stays green throughout; the ADK LLM-trajectory eval is wired into CI, and running it live flagged that its evalset/metric need hardening — the eval doing its job, not a number to over-claim.)
 
 ---
 
