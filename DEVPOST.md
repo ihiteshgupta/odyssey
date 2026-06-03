@@ -119,7 +119,7 @@ A full multi-agent turn (concierge + 3 merchant Gemini calls + UCP assemble/book
 ## Testing access
 
 - **Live cloud demo (preferred):** https://odyssey-concierge-4ha6ffo6hq-el.a.run.app — pick `concierge`, ask for a trip ("Plan a 5-day Bali trip from JFK for 2, Sep 1–6 2026, budget $2500, beachy and foodie"). All four Cloud Run services (asia-south1) back it; Gemini via Vertex AI.
-  - **Access note:** the services were made public for the verified 2026-06-02 run; public access requires relaxing the Workspace org policy `iam.allowedPolicyMemberDomains`. If the URL is behind auth at judging time, an org admin lifting that policy (or running `./scripts/go_public.sh`) restores public access with **no code change** — the steps are in `docs/DEPLOYMENT.md`.
+  - **Access note:** the Workspace org policy `iam.allowedPolicyMemberDomains` that previously blocked public access has been **lifted** (the deploy service account was granted the necessary org-level rights). Public access is enabled via `./scripts/go_public.sh` (grants `allUsers run.invoker`) with **no code change**; SEED mode also runs the full system offline with zero keys. Steps in `docs/DEPLOYMENT.md`.
 - **Self-contained video fallback:** a recorded end-to-end walkthrough (plan → both gates fire → 3 UCP confirmations) is provided so judging never depends on the live policy state.
 - **Reproducible runbook (zero keys):** `docs/DEPLOYMENT.md` plus the README judge flow —
   ```bash
@@ -134,4 +134,4 @@ A full multi-agent turn (concierge + 3 merchant Gemini calls + UCP assemble/book
 
 ## Honesty disclosure
 
-**AP2 mandate signing is simulated.** Signatures use a `STUB-SIG:` SHA-256 placeholder — **not** real ECDSA P-256 cryptography — and the merchant-side mandate **verification path is stubbed**, so no real money moves and no live payment rail is called. The mandate *structure* (Intent → Cart → Payment) and the server-side verification *logic shape* are in place; swapping in real ECDSA signing and a real verifier is a roadmap library swap, not a redesign.
+**AP2 mandate signing is simulated.** Signatures use a `STUB-SIG:` SHA-256 placeholder — **not** real ECDSA P-256 cryptography — so no real money moves and no live payment rail is ever called. What *is* real: the mandate **structure** (Intent → Cart → Payment) is live, and the server-side **verification genuinely runs** — the merchant recomputes the expected signature and rejects any cart or payment whose hashed fields were tampered with (`verify_cart_mandate` / `verify_payment_mandate` in `odyssey/protocols/ap2_adapter.py`). The only thing simulated is the *cryptographic primitive*: a SHA-256 recompute-and-compare stands in for an ECDSA verification, so the chain validates field integrity but is not yet cryptographically binding. Swapping in real ECDSA P-256 signing + verification is a roadmap library swap, not a redesign.
