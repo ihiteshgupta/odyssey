@@ -11,9 +11,10 @@ APAC SMB and mid-market companies — too small for a legacy Travel Management C
 through consumer OTAs (Expedia, Booking.com, Google Flights). The result is *unmanaged
 travel*: bookings made outside any policy, on personal cards or corporate cards with
 no pre-approval gate, generating receipts that arrive in expense reports days later.
-Industry research consistently estimates that unmanaged-travel programmes leak
-**10–20% of total travel spend** to out-of-policy purchases — booked at consumer prices,
-with zero enforcement at the point of sale.[^1]
+Corporate booking compliance sits at just **~42%** (Deloitte 2025) — i.e. **~58% of
+bookings go out-of-policy** — and **~65% of business travel is unmanaged**, booked at
+consumer prices with no pre-approval gate and no audit trail.[^1] (Vendor surveys put the
+avoidable-spend "leakage" at a directional 10–20%.)
 
 Finance leaders cannot fix this with legacy tooling. Enterprise TMCs (Concur, Navan,
 TravelPerk) require IT implementation, per-seat licensing, and minimum-commitment
