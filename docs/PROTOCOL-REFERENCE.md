@@ -93,7 +93,7 @@ Existing-checkout ops use a top-level `id`; the `checkout` payload omits its own
 
 ---
 
-## 4. AP2 (simulated signed payments)
+## 4. AP2 (signed payment mandates)
 
 Three Pydantic mandate types in `ap2.models.mandate` (module constants: `INTENT_MANDATE_DATA_KEY='ap2.mandates.IntentMandate'`, `CART_MANDATE_DATA_KEY='ap2.mandates.CartMandate'`, `PAYMENT_MANDATE_DATA_KEY='ap2.mandates.PaymentMandate'`):
 
@@ -107,7 +107,7 @@ Payload reuses **W3C Payment Request** shapes (`ap2.models.payment_request`): `P
 
 **TWO incompatible layers exist — pick ONE up front:** the stable **types layer** (`IntentMandate/CartMandate/PaymentMandate` over W3C PaymentRequest, plain string auth fields) vs the newer **generated SDK** (`OpenCheckoutMandate/CheckoutMandate/PaymentMandate` + `MandateClient` + SD-JWT). Mixing causes field-name/signing mismatches.
 
-**How to SIMULATE safely (recommended for Odyssey):** target the **stable types layer**. Build `IntentMandate → CartMandate → PaymentMandate`, populate `merchant_authorization`/`user_authorization` with **placeholder JWT/SHA-256 strings** (exactly what the CineAgent `AP2Handler.create_payment_mandate()` does — mock SHA-256). **Document loudly that verification is stubbed** so it is not mistaken for production crypto. Watch `intent_expiry`/`cart_expiry` (required timestamps) — a long booking session can expire mid-checkout; build refresh/re-prompt logic.
+**What Odyssey does:** target the **stable types layer** (string auth fields over the W3C PaymentRequest payload) but sign with **real ECDSA P-256**, not placeholder hashes. Build `IntentMandate → CartMandate → PaymentMandate`; `merchant_authorization` is a real ECDSA signature over the canonical CartMandate payload and `user_authorization` a real ECDSA signature over the PaymentMandate (see `odyssey/protocols/ap2_adapter.py`, `ECDSA-P256:` prefix). Verification recomputes the digest and checks the signature, so a tampered cart fails closed. **Honest caveat (documented loudly):** a single demo keypair derived from a fixed seed — this gives real cryptographic integrity / tamper-evidence, but is **not** a per-user PKI and **not** a live payment rail; no money moves. Watch `intent_expiry`/`cart_expiry` (required timestamps) — a long booking session can expire mid-checkout; build refresh/re-prompt logic.
 
 Licensing: Apache-2.0 (AP2, a2a-x402, ucp-sdk). Codelab code = Apache-2.0; codelab prose = CC-BY-4.0 (don't copy prose verbatim). Retain LICENSE/NOTICE, attribute Google.
 
