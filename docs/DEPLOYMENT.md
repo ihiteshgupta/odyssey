@@ -38,12 +38,13 @@ under `.response`).
 - ✅ Merchant containers healthy (`/.well-known/ucp` serves; A2A card `url` = the public run.app URL — the Cloud Run A2A fix works).
 - ✅ Concierge boots; `/list-apps` → `["concierge"]`.
 - ✅ Vertex `gemini-2.5-flash` responds in `asia-south1` with this project's credentials.
-- ⛔ **Public access blocked** by an inherited org policy `iam.allowedPolicyMemberDomains` (Domain-Restricted-Sharing) → all services currently require auth. End-to-end multi-agent test is deferred until public (below).
+- ✅ **Public access enabled** — the org policy `iam.allowedPolicyMemberDomains` (Domain-Restricted-Sharing) was **lifted** (deploy SA granted the org-level rights) and `allUsers` run.invoker set on all 4 services; the end-to-end multi-agent run was verified unauthenticated (above).
 
-## Going public (one org-admin action + one script)
+## Going public — RESOLVED (record / reproduce)
 
-Services are private because the Workspace org policy blocks `allUsers`. The deployer SA (project Owner)
-**cannot** override an org-level policy. An **org admin** of the hackathon account must do **one** of:
+Public access is **enabled**. The Workspace org policy that blocked `allUsers` has been lifted
+(the deploy SA was granted the org-level rights). For the record / to reproduce, the steps were
+**one** of:
 
 **A.** Console → IAM & Admin → **Organization Policies** → *Domain restricted sharing*
 (`iam.allowedPolicyMemberDomains`) → Manage policy → **scope to project `odyssey-hackathon-498211`** →
@@ -63,6 +64,13 @@ Then make all four services publicly invokable:
 ```
 After that, the **concierge URL is the public demo** (it calls the now-public merchants over A2A with no
 auth change, and Gemini via Vertex). No code change is required to go public.
+
+## Observability (Cloud Trace)
+ADK exports OpenTelemetry spans to Cloud Trace when `ODYSSEY_TRACE_TO_CLOUD=TRUE` (off by default
+for startup-probe safety). Enable on the live services with `./scripts/enable_tracing.sh` (grants the
+runtime SA `roles/cloudtrace.agent`, flips the env, adds startup CPU boost). Full guide:
+[`docs/OBSERVABILITY.md`](OBSERVABILITY.md). For the demo, the ADK dev-UI **Trace** tab on the
+concierge URL shows the multi-agent span tree with no deploy.
 
 ## Cost
 Scale-to-zero (`--min-instances=0`) → ~$0 idle. Only real cost is Vertex `gemini-2.5-flash`
