@@ -13,6 +13,7 @@ dependencies = [
     "ap2 @ git+https://github.com/google-agentic-commerce/AP2.git@e1ea56db72a6385bce3e5c1112b3a56ce60acb43",
     "ucp-sdk>=0.3.0",
     "sse-starlette>=3.4.4",
+    "firecrawl==4.28.2",
 ]
 
 [project.optional-dependencies]

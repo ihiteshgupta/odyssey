@@ -58,6 +58,11 @@ class _LiveSource:
 
 
 def make_source(vertical: Vertical) -> CatalogSource:
-    if os.environ.get("ODYSSEY_DATA_MODE", "SEED").upper() == "SEED":
+    mode = os.environ.get("ODYSSEY_DATA_MODE", "SEED").upper()
+    if mode == "SEED":
         return seeded_source(vertical)
+    if mode == "SCRAPE":
+        from odyssey.data.scrape import ScrapeSource  # lazy — keeps SEED cold-start free
+
+        return ScrapeSource(vertical)
     return _LiveSource(vertical)
