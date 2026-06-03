@@ -21,11 +21,12 @@ This is the first screen. Numbers marked `‹…›` are placeholders for artifa
 |---|---|---|---|
 | Real cross-process A2A negotiation | **Masked** — in-process fallback ran; looked green, never crossed services | **Live & verified** — `negotiate[hotel] via A2A slice=1000 fits=True` (not fallback) | `docs/DEPLOYMENT.md`; commits `88988d8` → `24d7030` → `1b80d5e` |
 | A2A trajectory eval | Falsely green (fallback hid the failure) | Honest → genuinely **1.0** on the happy-path trajectory | `evals/odyssey.evalset.json` (`adk eval`) |
+| A2A transient-failure resilience | **1 attempt → silent in-process mask** (the pattern that hid the cascade) | **Bounded retry + exponential backoff; `ODYSSEY_A2A_STRICT` surfaces persistent failures instead of masking** | `odyssey/concierge/negotiate.py`, `tests/test_a2a_resilience.py` |
 | Guardrail block-rate (unsafe checkouts denied) | `‹before-capture›` | **100% (6/6)** unsafe calls denied | `tests/test_safety_eval.py` |
 | False bookings (within-budget mismatch + empty cart) | `‹before-capture›` | **0** | `tests/test_safety_eval.py` |
 | Over-budget checkouts allowed | `‹before-capture›` | **0** (fail-closed on missing budget) | `odyssey/concierge/guardrail.py` |
 | Safe calls wrongly blocked (false positives) | `‹before-capture›` | **0** (3/3 safe calls allowed) | `tests/test_safety_eval.py` |
-| Offline test suite | `‹before-capture›` | **75 passed, 3 skipped** (skips need a Gemini key) | `uv run pytest -q` |
+| Offline test suite | `‹before-capture›` | **78 passed, 3 skipped** (skips need a Gemini key) | `uv run pytest -q` |
 | Prompt-optimized success (Vertex Prompt Optimizer / VAPO) | `‹VAPO before X%›` | `‹VAPO after Y%›` | VAPO run — pending |
 | Cost / full multi-agent turn | `‹before-capture›` | ~**$0.02** / turn (Vertex `gemini-2.5-flash`) | `docs/DEPLOYMENT.md` |
 | Idle infra cost | n/a | ~**$0** (scale-to-zero, `--min-instances=0`) | `docs/DEPLOYMENT.md` |
@@ -126,7 +127,7 @@ A full multi-agent turn (concierge + 3 merchant Gemini calls + UCP assemble/book
   uv venv --python 3.12 && uv pip install -e ".[dev]"
   cp .env.example .env                 # ODYSSEY_DATA_MODE=SEED is default — no keys
   ./scripts/run_merchants.sh           # 3 merchant agents (A2A + UCP, SEED inventory)
-  uv run pytest -q                     # 75 passed, 3 skipped, no API keys
+  uv run pytest -q                     # 78 passed, 3 skipped, no API keys
   uv run pytest tests/test_safety_eval.py -v -s   # prints the safety metrics table
   ```
 

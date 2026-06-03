@@ -55,4 +55,4 @@ the literal cross-process A2A negotiation, visualised. Pair it with Cloud Run's 
 
 1. The log pane mid-trip: `via A2A … fits=True`, `a2a_roundtrip_ms=…`, `cost_usd=… estimated=…`.
 2. The ADK dev-UI Trace tab span tree (or Cloud Trace Explorer DAG).
-3. Cloud Run Metrics latency chart + CI green with the test count (`75 passed, 3 skipped`).
+3. Cloud Run Metrics latency chart + CI green with the test count (`78 passed, 3 skipped`).

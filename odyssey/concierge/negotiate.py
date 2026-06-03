@@ -1,12 +1,23 @@
 from __future__ import annotations
 
 import logging
+import os
+import time
 
 from odyssey.common.types import Intent, Money, NegotiationResponse, Offer, Vertical
 from odyssey.concierge.clients import merchant_url
 from odyssey.merchants.agents import negotiate_offers
 
 log = logging.getLogger("odyssey.negotiate")
+
+# ── Resilience: bounded retry + strict no-mask mode ───────────────────────────
+# The in-process fallback is convenient but it MASKS real cross-process A2A
+# failures (it is what hid the original 3-bug cascade). So we (1) retry transient
+# failures with exponential backoff before degrading, and (2) allow a STRICT mode
+# that surfaces a persistent failure instead of silently serving in-process.
+A2A_MAX_ATTEMPTS = max(1, int(os.getenv("ODYSSEY_A2A_MAX_ATTEMPTS", "3")))
+A2A_BACKOFF_BASE_S = float(os.getenv("ODYSSEY_A2A_BACKOFF_BASE_S", "0.25"))
+A2A_STRICT = os.getenv("ODYSSEY_A2A_STRICT", "").upper() == "TRUE"
 
 # ── Observability: estimated cost/turn ────────────────────────────────────────
 # Gemini 2.5 Flash list price (USD per token), from Google's published
@@ -104,6 +115,43 @@ def _raw_to_response(raw: dict, currency: str) -> NegotiationResponse:
     )
 
 
+def _a2a_with_retry(
+    url: str,
+    vertical: Vertical,
+    intent: Intent,
+    slice_amount: float,
+    context_id: str | None,
+) -> dict | None:
+    """Call the cross-process A2A merchant with bounded exponential backoff.
+
+    Returns the offer dict on success. When every attempt fails: raises the last
+    exception under STRICT mode (surface, don't mask), else returns ``None`` to
+    let the caller degrade in-process — logged loudly, never a silent mask."""
+    last_exc: Exception | None = None
+    for attempt in range(1, A2A_MAX_ATTEMPTS + 1):
+        try:
+            return _a2a_request_offers(url, vertical, intent, slice_amount, context_id)
+        except Exception as e:
+            last_exc = e
+            log.warning(
+                "negotiate[%s] A2A attempt %d/%d failed (%s)",
+                vertical.value, attempt, A2A_MAX_ATTEMPTS, e,
+            )
+            if attempt < A2A_MAX_ATTEMPTS:
+                time.sleep(min(A2A_BACKOFF_BASE_S * 2 ** (attempt - 1), 2.0))
+    if A2A_STRICT and last_exc is not None:
+        log.error(
+            "negotiate[%s] A2A exhausted %d attempts; STRICT → surfacing failure",
+            vertical.value, A2A_MAX_ATTEMPTS,
+        )
+        raise last_exc
+    log.warning(
+        "negotiate[%s] A2A exhausted %d attempts; degrading to in-process fallback",
+        vertical.value, A2A_MAX_ATTEMPTS,
+    )
+    return None
+
+
 def request_offers(
     vertical: Vertical,
     intent: Intent,
@@ -112,14 +160,15 @@ def request_offers(
 ) -> NegotiationResponse:
     """Ask a merchant agent for offers within a slice.
 
-    PRIMARY path = A2A DataPart round-trip when the merchant URL is set;
-    FALLBACK = in-process negotiate_offers. Logs the path + fit.
+    PRIMARY path = A2A DataPart round-trip (with bounded retry) when the merchant
+    URL is set; FALLBACK = in-process negotiate_offers (unless STRICT). Logs the
+    path + fit.
     """
     cur = intent.total_budget.currency
     url = merchant_url(vertical)
     if url:
-        try:
-            raw = _a2a_request_offers(url, vertical, intent, slice_amount, context_id)
+        raw = _a2a_with_retry(url, vertical, intent, slice_amount, context_id)
+        if raw is not None:
             log.info(
                 "negotiate[%s] via A2A slice=%.0f fits=%s",
                 vertical.value,
@@ -128,10 +177,6 @@ def request_offers(
             )
             _log_estimated_cost(vertical, raw)
             return _raw_to_response(raw, cur)
-        except Exception as e:
-            log.warning(
-                "negotiate[%s] A2A failed (%s); falling back in-process", vertical.value, e
-            )
     raw = negotiate_offers(vertical, query=intent.destination, budget_slice=slice_amount)
     log.info(
         "negotiate[%s] in-process slice=%.0f fits=%s", vertical.value, slice_amount, raw["fits"]

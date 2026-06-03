@@ -8,7 +8,7 @@
 
 ## Pre-stage checklist (do BEFORE recording — never gamble on live latency)
 
-- [ ] Terminal 1: `ODYSSEY_DATA_MODE=SEED uv run pytest -q` ready to run (shows **75 passed, 3 skipped**).
+- [ ] Terminal 1: `ODYSSEY_DATA_MODE=SEED uv run pytest -q` ready to run (shows **78 passed, 3 skipped**).
 - [ ] Terminal 2: `uv run pytest tests/test_safety_eval.py -v -s` ready (prints the safety-metrics ASCII table).
 - [ ] Terminal 3: `uv run adk eval odyssey/concierge evals/odyssey.evalset.json --config_file_path test_config.json` (or the pytest path) ready, creds exported — pre-run once so it's warm.
 - [ ] Browser tab A: the **live concierge URL** (public access restored — policy lifted), a Bali brief pre-typed but not sent.
@@ -30,7 +30,7 @@
 | **1:05–1:25** | Browser tab C: VAPO before/after scores side by side. | `Vertex Prompt Optimizer (VAPO)` · `system instruction: ‹X%› → ‹Y%›` (judged by Gemini) | "Then I ran Google's own optimization stack — Vertex Prompt Optimizer data-drove the concierge's budget-negotiation instruction, and the Gen AI Eval Service scored the lift. The instruction got measurably better, automatically." |
 | **1:25–1:55** | **The adaptive re-negotiation, live.** Tight-budget Bali brief → one merchant doesn't fit → logs show the slice re-allocated → trip books in budget. | Highlight log lines: `via A2A … fits=False` → re-allocate → `fits=True` · `a2a_roundtrip_ms=…` · `cost_usd=… estimated=…` | "This is the agent being an agent. The hotel slice doesn't fit the budget — so the concierge re-allocates across vendors and re-negotiates until the whole trip fits. Real cross-process A2A, with per-turn latency and cost logged for every call." |
 | **1:55–2:20** | Trigger an **over-budget checkout** → guardrail **DENIES** on screen. Then a real booking → **HITL gate** blocks until you click approve. | `deny-by-default · fails CLOSED on missing budget` · `non-skippable human confirmation` | "And the trust spine. Try to check out over budget — denied, fail-closed. Try a real booking — it stops dead at a human-confirmation gate the agent cannot skip. It literally cannot spend money it wasn't authorized to." |
-| **2:20–2:35** | ~3-second montage: Cloud Trace **A2A span DAG** → token/cost/latency dashboard → CI green with the test count. | `Cloud Trace · 75 passed / 3 skipped · ruff clean` | "Every tool call and Gemini invocation is traced; cost and latency are on a dashboard; the whole thing is gated in CI. Production-grade, not a notebook." |
+| **2:20–2:35** | ~3-second montage: Cloud Trace **A2A span DAG** → token/cost/latency dashboard → CI green with the test count. | `Cloud Trace · 78 passed / 3 skipped · ruff clean` | "Every tool call and Gemini invocation is traced; cost and latency are on a dashboard; the whole thing is gated in CI. Production-grade, not a notebook." |
 | **2:35–3:00** | Business slide: TAM/wedge + the live public URL on screen. End on the AP2 audit-trail line. | `APAC SMB travel · protocol-native first-mover on A2A+UCP+AP2` · lower-third disclosure (below) | "The buyer isn't shopping for a travel bot — they want a governance artefact: a non-repudiable record that every booking was pre-approved against a budget the agent couldn't exceed. That's the product. Friction is the feature. Thanks for watching." |
 
 ---
