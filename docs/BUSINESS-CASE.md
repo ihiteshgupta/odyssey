@@ -1,6 +1,6 @@
 # Odyssey — Business Case
 
-**Google for Startups AI Agents Challenge · Track 1: Build · Region: APAC**
+**Google for Startups AI Agents Challenge · Track 2: Optimize (Existing Agents) · Region: APAC**
 
 ---
 

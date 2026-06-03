@@ -2,10 +2,10 @@
 
 **Odyssey is the trust-and-control layer for autonomous business travel — a multi-agent
 concierge that negotiates and books budget-respecting, multi-vendor trips across flights,
-hotels and activities, but spends nothing without a human-confirmed, cryptographically-signed
+hotels and activities, but spends nothing without a human-confirmed, signed (simulated, disclosed below)
 mandate that gives finance a non-repudiable audit trail and a budget it cannot exceed.**
 
-Built for the **Google for Startups AI Agents Challenge · Track 1: Build · Region: APAC**.
+Built for the **Google for Startups AI Agents Challenge · Track 2: Optimize (Existing Agents) · Region: APAC**.
 
 **Live demo (public):** https://odyssey-concierge-4ha6ffo6hq-el.a.run.app — pick `concierge`, ask
 for a trip. (Cloud Run scale-to-zero — first request may cold-start a few seconds.)
