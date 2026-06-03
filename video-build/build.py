@@ -98,6 +98,16 @@ SCENES = [
   '<img src="assets/concierge.png" style="width:100%;display:block"/></div>'
   '<div class="sub" style="margin-top:28px;font-size:31px">Concierge (ADK &middot; Gemini 3.5 Flash) negotiates flights, hotel &amp; activities cross-process over <span class="accent">A2A</span> with 3 merchant agents, settles over <span class="accent">UCP</span>, signs every booking as an <span class="accent">AP2</span> mandate chain.</div></div>'),
 
+ ("s2_live",
+  "And this isn't a mock-up. Here's the deployed agent running live on Cloud Run — taking a real request, calling its tools, and returning a complete, within-budget plan.",
+  '<div style="position:absolute;inset:0">'
+  '<div class="kicker" style="position:absolute;left:100px;top:48px">Live &middot; deployed on Google Cloud Run &middot; gemini-3.5-flash</div>'
+  '<div style="position:absolute;left:100px;top:84px;font-size:46px;font-weight:800;color:#e8eefc;letter-spacing:-.5px">Watch it actually run</div>'
+  '<div style="position:absolute;left:232px;top:160px;width:1456px;height:819px;border-radius:14px;border:1px solid rgba(125,211,252,.45);box-shadow:0 26px 80px rgba(0,0,0,.6);background:#0a0e1a"></div>'
+  '<div style="position:absolute;left:232px;top:996px;width:1456px;font-size:26px;color:#aebbd6;text-align:center">The deployed agent takes a real request, calls its tools across services, and returns a complete, within-budget plan &mdash; no mocks.</div>'
+  '</div>',
+  "assets/demo-fast.mp4"),
+
  ("s3",
   "For the Optimize track, the headline is a bug hunt. An in-process fallback was silently masking "
   "real cross-service failures — my tests were green while the agents never actually negotiated between "
@@ -181,7 +191,9 @@ def dur(path):
     return float(r.stdout.strip())
 
 clip_list = []
-for sid, narr, body in SCENES:
+for scene in SCENES:
+    sid, narr, body = scene[0], scene[1], scene[2]
+    video = scene[3] if len(scene) > 3 else None      # 4th elem → composite a live clip into the slide
     html = f"<!doctype html><html><head><meta charset='utf-8'><style>{CSS}</style></head><body>{body}</body></html>"
     hp = ROOT / f"{sid}.html"; hp.write_text(html)
     png = SLIDES / f"{sid}.png"
@@ -189,16 +201,30 @@ for sid, narr, body in SCENES:
          "--force-device-scale-factor=1","--window-size=1920,1080",
          "--virtual-time-budget=2500",f"--screenshot={png}",f"file://{hp}"])
     audio = tts(narr, AUDIO / f"{sid}.mp3")
-    total = round(dur(audio) + 0.75, 2)
-    fout = round(total - 0.5, 2)
     clip = CLIPS / f"{sid}.mp4"
-    run(["ffmpeg","-y","-loop","1","-i",str(png),"-i",str(audio),
-         "-filter_complex",
-         f"[0:v]scale=1920:1080,fps=30,fade=t=in:st=0:d=0.4,fade=t=out:st={fout}:d=0.5,format=yuv420p[v];[1:a]apad[a]",
-         "-map","[v]","-map","[a]","-t",str(total),
-         "-c:v","libx264","-preset","medium","-crf","20","-c:a","aac","-b:a","192k",str(clip)])
+    if video:
+        # Video scene: overlay the live screen-capture into the framed box on the slide,
+        # lay the voiceover over it. The clip's own length drives the scene duration.
+        vpath = ROOT / video
+        total = round(dur(vpath), 2)
+        fout = round(total - 0.6, 2)
+        run(["ffmpeg","-y","-loop","1","-i",str(png),"-i",str(vpath),"-i",str(audio),
+             "-filter_complex",
+             "[1:v]scale=1456:819,setsar=1[vid];[0:v]scale=1920:1080[bg];"
+             f"[bg][vid]overlay=232:160,fps=30,fade=t=in:st=0:d=0.4,fade=t=out:st={fout}:d=0.5,format=yuv420p[v];"
+             "[2:a]apad[a]",
+             "-map","[v]","-map","[a]","-t",str(total),
+             "-c:v","libx264","-preset","medium","-crf","20","-c:a","aac","-b:a","192k",str(clip)])
+    else:
+        total = round(dur(audio) + 0.75, 2)
+        fout = round(total - 0.5, 2)
+        run(["ffmpeg","-y","-loop","1","-i",str(png),"-i",str(audio),
+             "-filter_complex",
+             f"[0:v]scale=1920:1080,fps=30,fade=t=in:st=0:d=0.4,fade=t=out:st={fout}:d=0.5,format=yuv420p[v];[1:a]apad[a]",
+             "-map","[v]","-map","[a]","-t",str(total),
+             "-c:v","libx264","-preset","medium","-crf","20","-c:a","aac","-b:a","192k",str(clip)])
     clip_list.append((sid, clip, total))
-    print(f"{sid}: slide+voice+clip {total}s")
+    print(f"{sid}: {'video' if video else 'slide'}+voice+clip {total}s")
 
 listfile = ROOT / "concat.txt"
 listfile.write_text("".join(f"file '{c}'\n" for _, c, _ in clip_list))
