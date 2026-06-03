@@ -1,8 +1,0 @@
-file '/Users/hitesh.gupta/Projects/personal/odyssey/video-build/clips/s1.mp4'
-file '/Users/hitesh.gupta/Projects/personal/odyssey/video-build/clips/s2.mp4'
-file '/Users/hitesh.gupta/Projects/personal/odyssey/video-build/clips/s3.mp4'
-file '/Users/hitesh.gupta/Projects/personal/odyssey/video-build/clips/s4.mp4'
-file '/Users/hitesh.gupta/Projects/personal/odyssey/video-build/clips/s5.mp4'
-file '/Users/hitesh.gupta/Projects/personal/odyssey/video-build/clips/s6.mp4'
-file '/Users/hitesh.gupta/Projects/personal/odyssey/video-build/clips/s7.mp4'
-file '/Users/hitesh.gupta/Projects/personal/odyssey/video-build/clips/s8.mp4'

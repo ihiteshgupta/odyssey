@@ -140,7 +140,7 @@ SCENES = [
  ("s6",
   "The trust spine is what makes it safe. A deny-by-default budget guardrail that fails closed. "
   "A human-confirmation gate the agent cannot skip. And an A P 2 signed-mandate chain for a "
-  "non-repudiable audit trail. The agent literally cannot spend money it wasn't authorized to.",
+  "tamper-evident audit trail. The agent literally cannot spend money it wasn't authorized to.",
   '<div class="wrap"><div class="kicker">The trust spine</div>'
   '<h2>It <span class="accent">cannot</span> spend money it wasn&rsquo;t authorized to</h2>'
   '<div class="ba"><div class="col after" style="background:rgba(125,211,252,.07);border-color:rgba(125,211,252,.32)">'
@@ -148,15 +148,15 @@ SCENES = [
   '<div class="col after" style="background:rgba(125,211,252,.07);border-color:rgba(125,211,252,.32)">'
   '<div class="h" style="color:#7dd3fc">Non-skippable HITL</div><div class="t">a human confirms every booking</div></div>'
   '<div class="col after" style="background:rgba(125,211,252,.07);border-color:rgba(125,211,252,.32)">'
-  '<div class="h" style="color:#7dd3fc">AP2 mandate chain</div><div class="t">non-repudiable audit trail</div></div></div></div>'),
+  '<div class="h" style="color:#7dd3fc">AP2 mandate chain</div><div class="t">ECDSA-P256 signed audit trail</div></div></div></div>'),
 
  ("s7",
   "The buyer isn't shopping for a travel bot — they want a governance artifact. A-PAC mid-market firms "
-  "lose ten to twenty percent of travel spend to out-of-policy bookings, with no audit trail for finance. "
+  "run only about forty-two percent booking compliance, so most of that spend goes out-of-policy with no audit trail for finance. "
   "Odyssey is the first-mover native build on Google's own A2A, U C P, and A P 2 stack. Friction is the feature.",
   '<div class="wrap"><div class="kicker">The business case</div>'
   '<h2>A governance artifact, not a travel bot</h2>'
-  '<div class="sub" style="margin-top:36px">APAC mid-market firms lose <span class="accent">10–20%</span> of travel spend to out-of-policy bookings — with no audit trail for finance.</div>'
+  '<div class="sub" style="margin-top:36px">APAC mid-market firms run just <span class="accent">~42%</span> booking compliance (Deloitte 2025) — the rest goes out-of-policy, with no audit trail for finance.</div>'
   '<div style="margin-top:48px"><span class="badge">First-mover native build on Google&rsquo;s A2A &middot; UCP &middot; AP2 stack</span></div>'
   '<div class="sub" style="margin-top:34px;font-size:40px;color:#e8eefc;font-weight:700">Friction is the feature.</div></div>'),
 
@@ -167,7 +167,7 @@ SCENES = [
   '<h1>Every tool call. Every booking.<br>Every denial — <span class="accent">logged, signed, auditable.</span></h1>'
   '<div class="sub" style="margin-top:38px">Autonomous travel a CFO can sign off on.</div>'
   '<div style="margin-top:50px"><span class="badge" style="font-size:30px">github.com/ihiteshgupta/odyssey</span></div>'
-  '<div class="disc" style="text-align:center">AP2 payment signing is simulated (STUB-SIG SHA-256, not ECDSA P-256) — no real money moves. Server-side mandate verification genuinely runs.</div></div>'),
+  '<div class="disc" style="text-align:center">AP2 mandates are signed with real ECDSA P-256 (demo keypair) — no real money moves, no live payment rail. SEED mode runs fully offline.</div></div>'),
 ]
 
 def run(cmd):
