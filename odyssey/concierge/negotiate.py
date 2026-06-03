@@ -20,11 +20,11 @@ A2A_BACKOFF_BASE_S = float(os.getenv("ODYSSEY_A2A_BACKOFF_BASE_S", "0.25"))
 A2A_STRICT = os.getenv("ODYSSEY_A2A_STRICT", "").upper() == "TRUE"
 
 # ── Observability: estimated cost/turn ────────────────────────────────────────
-# Gemini 2.5 Flash list price (USD per token), from Google's published
-# per-1M-token rates: $0.30 / 1M input tokens, $2.50 / 1M output tokens.
+# Gemini 3.5 Flash list price (USD per token), from Google's published
+# per-1M-token rates: $1.50 / 1M input tokens, $9.00 / 1M output tokens.
 # Constants so the math is auditable and updatable in one place.
-GEMINI_2_5_FLASH_INPUT_USD_PER_TOKEN = 0.30 / 1_000_000
-GEMINI_2_5_FLASH_OUTPUT_USD_PER_TOKEN = 2.50 / 1_000_000
+GEMINI_3_5_FLASH_INPUT_USD_PER_TOKEN = 1.50 / 1_000_000
+GEMINI_3_5_FLASH_OUTPUT_USD_PER_TOKEN = 9.00 / 1_000_000
 
 
 def _usage_from(obj: object) -> object | None:
@@ -75,8 +75,8 @@ def _log_estimated_cost(vertical: Vertical, source: object) -> None:
             usage, "candidates_token_count", "output_tokens", "output_token_count"
         )
         cost_usd = round(
-            (in_tok or 0) * GEMINI_2_5_FLASH_INPUT_USD_PER_TOKEN
-            + (out_tok or 0) * GEMINI_2_5_FLASH_OUTPUT_USD_PER_TOKEN,
+            (in_tok or 0) * GEMINI_3_5_FLASH_INPUT_USD_PER_TOKEN
+            + (out_tok or 0) * GEMINI_3_5_FLASH_OUTPUT_USD_PER_TOKEN,
             6,
         )
         log.info(

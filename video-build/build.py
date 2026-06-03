@@ -89,14 +89,14 @@ SCENES = [
 
  ("s2",
   "Odyssey books a complete multi-vendor trip in one conversation. A planner agent on Google's "
-  "A D K and Gemini 2.5 Flash negotiates each slice cross-process over the A2A protocol with three "
+  "A D K and Gemini 3.5 Flash negotiates each slice cross-process over the A2A protocol with three "
   "independent merchant agents, settles over U C P, and signs every booking as an A P 2 mandate chain. "
   "Four services, live on Cloud Run.",
   '<div class="wrap"><div class="kicker">Live on Google Cloud Run &middot; asia-south1</div>'
   '<h2 style="font-size:54px">Multi-agent — deployed &amp; running</h2>'
   '<div style="margin-top:32px;align-self:center;border-radius:16px;overflow:hidden;border:1px solid rgba(125,211,252,.35);box-shadow:0 24px 70px rgba(0,0,0,.55);max-width:1480px">'
   '<img src="assets/concierge.png" style="width:100%;display:block"/></div>'
-  '<div class="sub" style="margin-top:28px;font-size:31px">Concierge (ADK &middot; Gemini 2.5 Flash) negotiates flights, hotel &amp; activities cross-process over <span class="accent">A2A</span> with 3 merchant agents, settles over <span class="accent">UCP</span>, signs every booking as an <span class="accent">AP2</span> mandate chain.</div></div>'),
+  '<div class="sub" style="margin-top:28px;font-size:31px">Concierge (ADK &middot; Gemini 3.5 Flash) negotiates flights, hotel &amp; activities cross-process over <span class="accent">A2A</span> with 3 merchant agents, settles over <span class="accent">UCP</span>, signs every booking as an <span class="accent">AP2</span> mandate chain.</div></div>'),
 
  ("s3",
   "For the Optimize track, the headline is a bug hunt. An in-process fallback was silently masking "

@@ -15,7 +15,7 @@ flowchart TB
 
     subgraph cr["Google Cloud Run · asia-south1"]
         direction TB
-        concierge["**Concierge agent**<br/>ADK · gemini-2.5-flash (Vertex AI)<br/>intent → allocate budget → negotiate → assemble → book"]
+        concierge["**Concierge agent**<br/>ADK · gemini-3.5-flash (Vertex AI)<br/>intent → allocate budget → negotiate → assemble → book"]
 
         subgraph gates["the booking must pass BOTH gates"]
             direction LR
@@ -64,7 +64,7 @@ flowchart TB
 | Agents talking | **A2A** (Agent2Agent) | Concierge sends each merchant agent a `NegotiationRequest` (budget slice + constraints) as a `DataPart`; the merchant's own Gemini agent answers with its `find_offers` result. Cross-process, between separate Cloud Run services. |
 | Commerce nouns/verbs | **UCP** (Universal Commerce Protocol) | Each merchant exposes `/.well-known/ucp` + an MCP/JSON-RPC `/mcp` endpoint (`search_catalog`, `create_checkout`, `complete_checkout`, …). The concierge assembles + books through these. |
 | Money trust | **AP2** (Agent Payments Protocol) | Every purchase is a signed **Intent → Cart → Payment** mandate chain; the merchant verifies the user-signed PaymentMandate server-side before confirming. Signatures are **real ECDSA P-256** (`cryptography`, demo keypair) — no real money moves. |
-| Reasoning | **Gemini 2.5 Flash on Vertex AI** | Concierge dialogue + each merchant agent's tool-calling. |
+| Reasoning | **Gemini 3.5 Flash on Vertex AI** | Concierge dialogue + each merchant agent's tool-calling. |
 | Tool binding | **MCP** (JSON-RPC 2.0) | UCP operations are invoked via `tools/call`. |
 
 ## The trust gates (why an enterprise can let this touch a card)

@@ -19,7 +19,7 @@ from odyssey.protocols.ucp_client import UCPClient
 
 log = logging.getLogger("odyssey.merchant")
 
-MODEL = "gemini-2.5-flash"
+MODEL = "gemini-3.5-flash"
 
 # Thread the merchant's real LLM token usage to the concierge across A2A by
 # appending it as a `__odyssey_usage__` sentinel part on the final response.

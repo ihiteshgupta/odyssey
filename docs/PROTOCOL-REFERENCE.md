@@ -17,7 +17,7 @@
 | `fastapi` + `uvicorn` | `fastapi>=0.115.0`, `uvicorn>=0.34.0`, `httpx>=0.28.0` | For hand-written UCP merchant + client (codelab pattern). |
 | `cryptography`, `jwcrypto` | `cryptography==46.0.5`, `jwcrypto` | Only if doing real AP2 SD-JWT signing. Skip for stubbed sim. |
 
-**Gemini model ID (exact string for code):** use **`gemini-2.5-flash`** (GA, stable, recommended pinned) or `gemini-2.5-pro`. Avoid the floating `gemini-flash-latest` alias on regional/Vertex endpoints (e.g. us-central1) where it may not resolve. `gemini-3-pro-preview` is **discontinued** (~Mar 2026); `gemini-3.1-pro-preview` is preview-only (not GA as of 2026-06-02) — accept preview risk if used. Note `gemini-2.5-flash` has a published Vertex retirement date of 2026-10-16.
+**Gemini model ID (exact string for code):** use **`gemini-3.5-flash`** (GA, latest Flash) via the **`global`** Vertex location — it returns 404 on regional endpoints such as `asia-south1`, where `gemini-2.5-flash` remains the regional fallback (verified 2026-06-03). Set `GOOGLE_CLOUD_LOCATION=global` so the model resolves. Avoid the floating `gemini-flash-latest` alias on Vertex where it may not resolve. `gemini-3-pro-preview` is **discontinued** (~Mar 2026); `gemini-3.1-pro-preview` is preview-only — accept preview risk if used.
 
 **Run commands:**
 ```bash
@@ -147,7 +147,7 @@ Use: Authorization: Bearer <access_token>
 5. **`ap2` is git-only:** pin a **commit SHA** in `pyproject.toml`, never `@main`.
 6. **A2A negotiation schema is ours to define** — fix the offer/counter-offer convention (same-task `input-required`) before merchant agents diverge; carry payloads in `DataPart`.
 7. **Hotels need a 2-call flow** — budget the extra round-trip and chunk `hotelIds`.
-8. **Model pin:** use `gemini-2.5-flash` (GA), not `gemini-flash-latest` on Vertex regional endpoints, not the discontinued `gemini-3-pro-preview`.
+8. **Model pin:** use `gemini-3.5-flash` (GA), not `gemini-flash-latest` on Vertex regional endpoints, not the discontinued `gemini-3-pro-preview`.
 9. **Probe both Agent Card paths** (`agent-card.json` and legacy `agent.json`).
 
 ---

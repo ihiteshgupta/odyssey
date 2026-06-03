@@ -15,7 +15,7 @@ from odyssey.concierge.negotiate import request_offers
 from odyssey.concierge.policy import allocate, reallocate
 from odyssey.protocols.ap2_adapter import build_intent_mandate, build_payment_mandate
 
-MODEL = "gemini-2.5-flash"
+MODEL = "gemini-3.5-flash"
 MAX_ROUNDS = 3
 log = logging.getLogger("odyssey.concierge")
 _VERTS = (Vertical.FLIGHT, Vertical.HOTEL, Vertical.ACTIVITY)

@@ -36,7 +36,7 @@ for a trip. (Cloud Run scale-to-zero — first request may cold-start a few seco
 ## Live Demo / Testing Access
 
 **Public live demo:** https://odyssey-concierge-4ha6ffo6hq-el.a.run.app
-4 services on Google Cloud Run (asia-south1). Gemini 2.5 Flash via Vertex AI
+4 services on Google Cloud Run (asia-south1). Gemini 3.5 Flash via Vertex AI
 (runtime service account — no API key needed on the server side).
 See [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md) for service URLs.
 
@@ -77,7 +77,7 @@ uv run pytest -q
 
 ## Technical Implementation
 
-**Stack:** Google ADK · Gemini 2.5 Flash on Vertex AI · Agent2Agent (A2A) ·
+**Stack:** Google ADK · Gemini 3.5 Flash on Vertex AI · Agent2Agent (A2A) ·
 Universal Commerce Protocol (UCP) · Agent Payments Protocol (AP2) ·
 MCP (JSON-RPC 2.0) · FastAPI · Google Cloud Run × 4 (asia-south1)
 
@@ -96,7 +96,7 @@ A2A — a separate Cloud Run service, not in-process. Concierge logs confirm
 | **A2A** | Concierge → merchant `NegotiationRequest` (budget slice + constraints); cross-process between Cloud Run services |
 | **UCP** | Each merchant exposes `/.well-known/ucp` + MCP endpoint (`search_catalog`, `create_checkout`, `complete_checkout`) |
 | **AP2** | Signed Intent → Cart → Payment mandate chain; merchant verifies the user-signed `PaymentMandate` before confirming (real ECDSA P-256; demo keypair) |
-| **Gemini 2.5 Flash / Vertex AI** | Concierge dialogue + each merchant agent's tool-calling |
+| **Gemini 3.5 Flash / Vertex AI** | Concierge dialogue + each merchant agent's tool-calling |
 | **MCP (JSON-RPC 2.0)** | UCP operations invoked via `tools/call` |
 | **ADK** | Agent framework, `before_tool_callback` guardrail, `require_confirmation` HITL gate |
 
@@ -108,7 +108,7 @@ flowchart TB
 
     subgraph cr["Google Cloud Run · asia-south1"]
         direction TB
-        concierge["**Concierge agent**<br/>ADK · gemini-2.5-flash (Vertex AI)<br/>intent → allocate budget → negotiate → assemble → book"]
+        concierge["**Concierge agent**<br/>ADK · gemini-3.5-flash (Vertex AI)<br/>intent → allocate budget → negotiate → assemble → book"]
 
         subgraph gates["the booking must pass BOTH gates"]
             direction LR
@@ -228,7 +228,7 @@ Full methodology and reproduction steps: [`docs/EVAL.md`](docs/EVAL.md).
 
 ## Stack
 
-Gemini 2.5 Flash (`gemini-2.5-flash`) · Google ADK (`google-adk[a2a]`) ·
+Gemini 3.5 Flash (`gemini-3.5-flash`) · Google ADK (`google-adk[a2a]`) ·
 Agent2Agent (`a2a-sdk`) · Agent Payments Protocol (`ap2`) ·
 Universal Commerce Protocol (`ucp-sdk` schemas) · MCP (JSON-RPC 2.0) ·
 FastAPI · Google Cloud Run (asia-south1) · Amadeus Self-Service APIs (LIVE/SEED fallback).

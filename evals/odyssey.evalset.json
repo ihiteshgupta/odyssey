@@ -39,7 +39,7 @@
                 "function_call": null,
                 "function_response": null,
                 "inline_data": null,
-                "text": "Here is your planned itinerary:\n\n*   **Flight:** JFK to Bali (DPS) for $812\n*   **Hotel:** Bali Beach Resort for $640\n*   **Activity:** Ubud Rice Terrace Tour for $55\n\nThe grand total for this trip is **$1507**.\n\nThis is within your budget of $2000.\n\nDo you confirm that you want to book this trip?",
+                "text": "I have planned a wonderful beachy trip to Bali within your budget! Here is your itinerary:\n\n### **Trip Itinerary: Bali (DPS) from JFK**\n**Dates:** September 1 – 6, 2026 (2 Adults)\n\n1. **Flight**: Flight JFK → DPS \n   - **Cost:** $812 USD\n2. **Hotel**: Bali Beach Resort (Beachy Preference)\n   - **Cost:** $640 USD\n3. **Activity**: Ubud Rice Terrace Tour\n   - **Cost:** $55 USD\n\n---\n### **Grand Total: $1,507 USD** *(Within your $2,000 budget)*\n\nWould you like to confirm and book this entire itinerary? Please reply with a **\"yes\"** or **\"confirm\"** to proceed with the booking!",
                 "thought": null,
                 "thought_signature": null,
                 "video_metadata": null,
@@ -55,15 +55,15 @@
               {
                 "id": null,
                 "args": {
-                  "origin": "JFK",
-                  "end": "2026-09-06",
-                  "total_budget": 2000,
                   "destination": "Bali (DPS)",
+                  "start": "2026-09-01",
+                  "origin": "JFK",
                   "party_size": 2,
                   "prefs": [
                     "beachy"
                   ],
-                  "start": "2026-09-01"
+                  "end": "2026-09-06",
+                  "total_budget": 2000
                 },
                 "name": "plan_trip",
                 "partial_args": null,
@@ -124,7 +124,7 @@
                 "function_call": null,
                 "function_response": null,
                 "inline_data": null,
-                "text": "I have planned your trip to Bali! Here's the itinerary:\n\n**Flight:**\n*   JFK to DPS: $812\n\n**Hotel:**\n*   Bali Beach Resort: $640\n\n**Activity:**\n*   Ubud Rice Terrace Tour: $55\n\n**Grand Total: $1507**\n\nThis plan is within your budget of $2500.\n\nPlease confirm if you'd like to book this trip.\n",
+                "text": "I have assembled a flight, hotel, and activity itinerary for your trip to Bali! \n\nHere are the details:\n- **Flight**: JFK to DPS (Round-trip) - **$812**\n- **Hotel**: Bali Beach Resort (5 nights) - **$640**\n- **Activity**: Ubud Rice Terrace Tour - **$55**\n\n### **Grand Total: $1,507 USD** (Well within your budget of $2,500!)\n\nPlease confirm if this itinerary looks good to you, and I will proceed with booking.",
                 "thought": null,
                 "thought_signature": null,
                 "video_metadata": null,
@@ -140,15 +140,15 @@
               {
                 "id": null,
                 "args": {
-                  "end": "2026-09-06",
-                  "start": "2026-09-01",
+                  "origin": "New York (JFK)",
                   "destination": "Bali (DPS)",
+                  "end": "2026-09-06",
                   "party_size": 2,
+                  "total_budget": 2500,
+                  "start": "2026-09-01",
                   "prefs": [
                     "beach"
-                  ],
-                  "total_budget": 2500,
-                  "origin": "New York (JFK)"
+                  ]
                 },
                 "name": "plan_trip",
                 "partial_args": null,
@@ -209,7 +209,7 @@
                 "function_call": null,
                 "function_response": null,
                 "inline_data": null,
-                "text": "Here is your planned itinerary:\n\n**Flight:**\n*   JFK → DPS: $812\n\n**Hotel:**\n*   Bali Beach Resort: $640\n\n**Activity:**\n*   Ubud Rice Terrace Tour: $55\n\n**Grand Total:** $1507\n\nThis plan is within your budget of $3000. Would you like to confirm and book this trip?",
+                "text": "Here is your beachy itinerary for Bali (JFK to DPS) from September 1 to September 6, 2026, for 2 adults:\n\n### **Itinerary Details**\n1. **Flight**: Flight JFK → DPS \n   - **Price**: $812 USD\n2. **Accommodation**: Bali Beach Resort (5 nights)\n   - **Price**: $640 USD\n3. **Activity**: Ubud Rice Terrace Tour\n   - **Price**: $55 USD\n\n---\n### **Grand Total: $1,507 USD** *(Well within your $3,000 USD budget!)*\n\nWould you like me to go ahead and book this trip for you? Please confirm to proceed.",
                 "thought": null,
                 "thought_signature": null,
                 "video_metadata": null,
@@ -225,15 +225,15 @@
               {
                 "id": null,
                 "args": {
-                  "total_budget": 3000,
-                  "origin": "JFK",
-                  "start": "2026-09-01",
-                  "end": "2026-09-06",
                   "party_size": 2,
-                  "destination": "Bali (DPS)",
                   "prefs": [
                     "beachy"
-                  ]
+                  ],
+                  "start": "2026-09-01",
+                  "destination": "Bali",
+                  "origin": "JFK",
+                  "end": "2026-09-06",
+                  "total_budget": 3000
                 },
                 "name": "plan_trip",
                 "partial_args": null,
@@ -294,7 +294,7 @@
                 "function_call": null,
                 "function_response": null,
                 "inline_data": null,
-                "text": "I was unable to plan a complete trip to Bali (including flights and hotels) from New York for $700. The closest fit I could find within some budget constraints only included an \"Ubud Rice Terrace Tour\" for $55.\n\nTo help me plan your trip, could you please relax one constraint: either increase your total budget or adjust your travel dates?",
+                "text": "We were unable to find a complete flight and hotel package to Bali (DPS) from New York (JFK) for 2 adults within your USD 700 budget. \n\nThe closest fit we could assemble is a local activity:\n*   **Activity**: Ubud Rice Terrace Tour (USD 55)\n*   **Flights & Hotel**: No options available within the remaining budget.\n\n**Grand Total:** USD 55 (Incomplete Itinerary)\n\nTo help us successfully book a complete trip, please relax **one** constraint:\n1. **Budget**: Would you be willing to increase your total budget? (Flights and hotels for two adults to Bali typically require a higher budget).\n2. **Dates**: Would you like to check other dates when travel costs might be lower?",
                 "thought": null,
                 "thought_signature": null,
                 "video_metadata": null,
@@ -310,15 +310,15 @@
               {
                 "id": null,
                 "args": {
-                  "start": "2026-09-01",
+                  "party_size": 2,
                   "origin": "New York (JFK)",
+                  "total_budget": 700,
+                  "destination": "Bali (DPS)",
                   "prefs": [
                     "beach"
                   ],
-                  "destination": "Bali (DPS)",
-                  "party_size": 2,
-                  "end": "2026-09-06",
-                  "total_budget": 700
+                  "start": "2026-09-01",
+                  "end": "2026-09-06"
                 },
                 "name": "plan_trip",
                 "partial_args": null,

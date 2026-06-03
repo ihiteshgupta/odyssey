@@ -9,7 +9,7 @@
 
 ## The one-paragraph story
 
-Odyssey is a production multi-agent corporate-travel concierge: a planner agent (Google ADK + Gemini 2.5 Flash on Vertex AI) negotiates a budget-respecting, multi-vendor trip — flights, hotel, activities — over **A2A** with three independent merchant agents, assembles the cheapest compliant itinerary over **UCP**, and books nothing without passing two gates: a deny-by-default budget guardrail and a non-skippable human confirmation, settled as a signed **AP2** Intent→Cart→Payment mandate chain. For **Track 2 (Optimize)** we did not add features — we made the agent *provably* reliable. The headline optimization is the **A2A 3-bug cascade fix**: an in-process fallback was silently masking real cross-process A2A failures, so the agent looked "green" while never actually negotiating between services. We adopted an honest-tests-first discipline — make the eval catch the lie, fix the root cause, then prove the real cross-service trajectory — and wired that discipline in: ADK `adk eval` + the evalset in CI, a semantic `final_response_match_v2` judge, and per-turn cost & latency instrumentation with Cloud Trace. The result: a falsely-green agent became an honestly-tested one, and then a genuinely-passing one.
+Odyssey is a production multi-agent corporate-travel concierge: a planner agent (Google ADK + Gemini 3.5 Flash on Vertex AI) negotiates a budget-respecting, multi-vendor trip — flights, hotel, activities — over **A2A** with three independent merchant agents, assembles the cheapest compliant itinerary over **UCP**, and books nothing without passing two gates: a deny-by-default budget guardrail and a non-skippable human confirmation, settled as a signed **AP2** Intent→Cart→Payment mandate chain. For **Track 2 (Optimize)** we did not add features — we made the agent *provably* reliable. The headline optimization is the **A2A 3-bug cascade fix**: an in-process fallback was silently masking real cross-process A2A failures, so the agent looked "green" while never actually negotiating between services. We adopted an honest-tests-first discipline — make the eval catch the lie, fix the root cause, then prove the real cross-service trajectory — and wired that discipline in: ADK `adk eval` + the evalset in CI, a semantic `final_response_match_v2` judge, and per-turn cost & latency instrumentation with Cloud Trace. The result: a falsely-green agent became an honestly-tested one, and then a genuinely-passing one.
 
 ---
 
@@ -27,7 +27,7 @@ This is the first screen. Every number below is asserted today by the cited file
 | Over-budget checkouts allowed | — | **0** (fail-closed on missing budget) | `odyssey/concierge/guardrail.py` |
 | Safe calls wrongly blocked (false positives) | — | **0** (3/3 safe calls allowed) | `tests/test_safety_eval.py` |
 | Offline test suite | — | **78 passed, 3 skipped** (skips need a Gemini key) | `uv run pytest -q` |
-| Cost / full multi-agent turn | — | ~**$0.02** / turn (Vertex `gemini-2.5-flash`) | `docs/DEPLOYMENT.md` |
+| Cost / full multi-agent turn | — | ~**$0.02** / turn (Vertex `gemini-3.5-flash`) | `docs/DEPLOYMENT.md` |
 | Idle infra cost | n/a | ~**$0** (scale-to-zero, `--min-instances=0`) | `docs/DEPLOYMENT.md` |
 
 The deterministic safety eval prints this judge-legible table (`uv run pytest tests/test_safety_eval.py -v -s`):
@@ -48,7 +48,7 @@ The deterministic safety eval prints this judge-legible table (`uv run pytest te
 ## Five production properties (each tied to a real artifact)
 
 **1. Observability — you can see every negotiation and what it cost.**
-The concierge emits INFO-level traces of the live A2A round-trip — e.g. `negotiate[hotel] via A2A slice=1000 fits=True` (concierge side) and `POST / 200` + `convert_event_to_a2a_message` (merchant side) — which is exactly how the masked-fallback bug was finally caught: the log proves the call crossed a process boundary instead of short-circuiting in-memory. Per-turn cost (~$0.02 for a full multi-agent turn on Vertex `gemini-2.5-flash`) and latency are observable, with opt-in Cloud Trace export on the concierge (`ODYSSEY_TRACE_TO_CLOUD`, commit `11cbd95`). *Files:* `odyssey/concierge/negotiate.py`, `docs/DEPLOYMENT.md`.
+The concierge emits INFO-level traces of the live A2A round-trip — e.g. `negotiate[hotel] via A2A slice=1000 fits=True` (concierge side) and `POST / 200` + `convert_event_to_a2a_message` (merchant side) — which is exactly how the masked-fallback bug was finally caught: the log proves the call crossed a process boundary instead of short-circuiting in-memory. Per-turn cost (~$0.02 for a full multi-agent turn on Vertex `gemini-3.5-flash`) and latency are observable, with opt-in Cloud Trace export on the concierge (`ODYSSEY_TRACE_TO_CLOUD`, commit `11cbd95`). *Files:* `odyssey/concierge/negotiate.py`, `docs/DEPLOYMENT.md`.
 
 **2. Guardrails — deny-by-default, fail-closed.**
 `before_tool_callback` in `odyssey/concierge/guardrail.py` intercepts every tool dispatch. A checkout tool (`complete_trip` / `complete_purchase` / `complete_checkout`) is refused unless a non-empty cart exists AND `sum(cart prices) ≤ total_budget`. Critically, **missing `total_budget` denies the checkout** — "this is a payment gate, so we must not allow a checkout to proceed when we cannot verify the spend is within the user's budget." Combined with the HITL gate, the agent literally cannot spend money it wasn't authorized to. *Files:* `odyssey/concierge/guardrail.py`, `odyssey/concierge/agent.py` (`require_confirmation=True` on `complete_trip`).
@@ -57,7 +57,7 @@ The concierge emits INFO-level traces of the live A2A round-trip — e.g. `negot
 `tests/test_safety_eval.py` runs fully offline in SEED mode (no LLM, no network, no key): 6 adversarial guardrail-block scenarios (all must DENY), 3 safe calls (all must ALLOW — zero false positives), 3 budget-level plan assertions, and a simulated-only check. It is the primary CI gate (`.github/workflows/ci.yml` runs ruff + full pytest on every push). The LLM layer is `evals/odyssey.evalset.json` via `adk eval` — two single-turn cases regenerated from real captured runs (Bali $2500 → plans within budget, asks to confirm; Bali $700 → infeasible, refuses), scored by the semantic `final_response_match_v2` LLM-judge rather than brittle lexical overlap. (Exact tool-trajectory matching was dropped: the LLM varies plan_trip arg extraction run-to-run, so a 1.0 threshold is inherently flaky — correct tool use is implied by a correct outcome, and the exact tool-dispatch + HITL gate is covered deterministically by the safety eval.) *Files:* `tests/test_safety_eval.py`, `evals/odyssey.evalset.json`, `evals/test_config.json`, `.github/workflows/ci.yml`.
 
 **4. Cost — cheap per turn, free at rest.**
-A full multi-agent turn (concierge + 3 merchant Gemini calls + UCP assemble/book) costs ~$0.02 on Vertex `gemini-2.5-flash`. All four services are `--min-instances=0` (scale-to-zero), so idle cost is ~$0 — a complete demo stays far under the hackathon credit. *Files:* `docs/DEPLOYMENT.md`.
+A full multi-agent turn (concierge + 3 merchant Gemini calls + UCP assemble/book) costs ~$0.02 on Vertex `gemini-3.5-flash`. All four services are `--min-instances=0` (scale-to-zero), so idle cost is ~$0 — a complete demo stays far under the hackathon credit. *Files:* `docs/DEPLOYMENT.md`.
 
 **5. Deploy — four real Cloud Run services in asia-south1.**
 `odyssey-concierge`, `odyssey-flight`, `odyssey-hotel`, `odyssey-activity` run on Google Cloud Run (Mumbai), one shared image, Gemini via Vertex AI on a runtime service account (no API key on the server). The full runbook — image build, go-public script, org-policy steps, isolated gcloud config — is reproducible. *Files:* `docs/DEPLOYMENT.md`, `scripts/go_public.sh`, `Dockerfile`.
@@ -105,7 +105,7 @@ A full multi-agent turn (concierge + 3 merchant Gemini calls + UCP assemble/book
 | Layer | Tech |
 |---|---|
 | Agent framework | **Google ADK** — `before_tool_callback` (guardrail), `require_confirmation` (HITL), `adk eval` |
-| Reasoning | **Gemini 2.5 Flash on Vertex AI** (`gemini-2.5-flash`, runtime service account) |
+| Reasoning | **Gemini 3.5 Flash on Vertex AI** (`gemini-3.5-flash`, runtime service account) |
 | Agents talking | **A2A** (Agent2Agent) — cross-process `NegotiationRequest` DataParts between Cloud Run services (`a2a-sdk`) |
 | Commerce | **UCP** (Universal Commerce Protocol) — `/.well-known/ucp` + `search_catalog` / `create_checkout` / `complete_checkout` |
 | Money trust | **AP2** (Agent Payments Protocol) — signed Intent → Cart → Payment mandate chain (real ECDSA P-256; demo keypair) |

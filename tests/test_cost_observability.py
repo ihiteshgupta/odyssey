@@ -14,8 +14,8 @@ from types import SimpleNamespace
 from odyssey.common.types import Vertical
 from odyssey.concierge.a2a_client import _estimate_usage, _extract_usage
 from odyssey.concierge.negotiate import (
-    GEMINI_2_5_FLASH_INPUT_USD_PER_TOKEN,
-    GEMINI_2_5_FLASH_OUTPUT_USD_PER_TOKEN,
+    GEMINI_3_5_FLASH_INPUT_USD_PER_TOKEN,
+    GEMINI_3_5_FLASH_OUTPUT_USD_PER_TOKEN,
     _log_estimated_cost,
 )
 
@@ -62,8 +62,8 @@ def test_cost_logged_real_from_threaded_usage(caplog) -> None:
         "_odyssey_usage": {"prompt_token_count": 1000, "candidates_token_count": 500},
     }
     expected = round(
-        1000 * GEMINI_2_5_FLASH_INPUT_USD_PER_TOKEN
-        + 500 * GEMINI_2_5_FLASH_OUTPUT_USD_PER_TOKEN,
+        1000 * GEMINI_3_5_FLASH_INPUT_USD_PER_TOKEN
+        + 500 * GEMINI_3_5_FLASH_OUTPUT_USD_PER_TOKEN,
         6,
     )
     with caplog.at_level(logging.INFO, logger="odyssey.negotiate"):

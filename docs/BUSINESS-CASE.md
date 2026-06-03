@@ -64,7 +64,7 @@ partnerships and proprietary checkout flows.
 ## The Solution
 
 Odyssey is a multi-agent concierge that plans and books a complete multi-vendor
-business trip in one conversation. A planner agent (Google ADK + Gemini 2.5 Flash
+business trip in one conversation. A planner agent (Google ADK + Gemini 3.5 Flash
 on Vertex AI) accepts a natural-language brief ("Bali, 2 people, $2,500, Sep 1–6"),
 splits the budget algorithmically across flights, hotel, and activities, and
 **negotiates each slice independently** with a separate specialist merchant agent

@@ -37,7 +37,7 @@ under `.response`).
 ### Verified
 - ✅ Merchant containers healthy (`/.well-known/ucp` serves; A2A card `url` = the public run.app URL — the Cloud Run A2A fix works).
 - ✅ Concierge boots; `/list-apps` → `["concierge"]`.
-- ✅ Vertex `gemini-2.5-flash` responds in `asia-south1` with this project's credentials.
+- ✅ Vertex `gemini-3.5-flash` responds via the **`global`** endpoint (services set `GOOGLE_CLOUD_LOCATION=global`; it 404s in `asia-south1`, where `gemini-2.5-flash` is the regional fallback) with this project's credentials.
 - ✅ **Public access enabled** — the org policy `iam.allowedPolicyMemberDomains` (Domain-Restricted-Sharing) was **lifted** (deploy SA granted the org-level rights) and `allUsers` run.invoker set on all 4 services; the end-to-end multi-agent run was verified unauthenticated (above).
 
 ## Going public — RESOLVED (record / reproduce)
@@ -73,7 +73,7 @@ runtime SA `roles/cloudtrace.agent`, flips the env, adds startup CPU boost). Ful
 concierge URL shows the multi-agent span tree with no deploy.
 
 ## Cost
-Scale-to-zero (`--min-instances=0`) → ~$0 idle. Only real cost is Vertex `gemini-2.5-flash`
+Scale-to-zero (`--min-instances=0`) → ~$0 idle. Only real cost is Vertex `gemini-3.5-flash`
 (~$0.02 per full multi-agent turn). A demo stays far under the $500 credit. Set a budget alert in
 Billing → Budgets & alerts (recommended $50). For a live demo, optionally `--min-instances=1` on the
 concierge to avoid cold-start, then set back to 0.
