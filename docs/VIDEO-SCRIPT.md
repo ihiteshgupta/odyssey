@@ -10,7 +10,7 @@
 
 - [ ] Terminal 1: `ODYSSEY_DATA_MODE=SEED uv run pytest -q` ready to run (shows **78 passed, 3 skipped**).
 - [ ] Terminal 2: `uv run pytest tests/test_safety_eval.py -v -s` ready (prints the safety-metrics ASCII table).
-- [ ] Terminal 3: `uv run adk eval odyssey/concierge evals/odyssey.evalset.json --config_file_path test_config.json` (or the pytest path) ready, creds exported — pre-run once so it's warm.
+- [ ] Terminal 3: `uv run pytest tests/test_adk_eval.py -q` ready, Vertex creds exported — the ADK eval (semantic `final_response_match_v2` judge, config in `evals/test_config.json`); pre-run once so it's warm.
 - [ ] Browser tab A: the **live concierge URL** (public access restored — policy lifted), a Bali brief pre-typed but not sent.
 - [ ] Browser tab B: **Cloud Trace / Agent Engine** Traces view of a prior run, zoomed to the A2A spans.
 - [ ] Browser tab C: VAPO `optimized_results.json` (original → optimized score) open.
