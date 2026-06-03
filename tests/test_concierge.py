@@ -16,7 +16,7 @@ def test_plan_trip_in_budget():
     assert plan["within_budget"] is True
     assert {i["vertical"] for i in plan["items"]} == {"flight", "hotel", "activity"}
     assert plan["total"] <= 2500.0
-    assert all(i["cart_mandate"]["merchant_authorization"].startswith("STUB-SIG:") for i in plan["items"])
+    assert all(i["cart_mandate"]["merchant_authorization"].startswith("ECDSA-P256:") for i in plan["items"])
 
 
 def test_finalize_refuses_without_carts():

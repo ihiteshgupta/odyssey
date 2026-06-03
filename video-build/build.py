@@ -1,7 +1,13 @@
 #!/usr/bin/env python3
 """Programmatic Odyssey demo video: styled HTML slides + Google Cloud TTS (Studio
 voice) AI voiceover, assembled into a 1080p MP4 with ffmpeg. macOS `say` fallback."""
-import os, subprocess, json, pathlib, base64, urllib.request, time
+import base64
+import json
+import os
+import pathlib
+import subprocess
+import time
+import urllib.request
 
 ROOT = pathlib.Path(__file__).resolve().parent
 SLIDES, AUDIO, CLIPS = ROOT / "slides", ROOT / "audio", ROOT / "clips"
@@ -181,7 +187,7 @@ for sid, narr, body in SCENES:
     png = SLIDES / f"{sid}.png"
     run([str(HS),"--headless","--no-sandbox","--disable-gpu","--hide-scrollbars",
          "--force-device-scale-factor=1","--window-size=1920,1080",
-         f"--virtual-time-budget=2500",f"--screenshot={png}",f"file://{hp}"])
+         "--virtual-time-budget=2500",f"--screenshot={png}",f"file://{hp}"])
     audio = tts(narr, AUDIO / f"{sid}.mp3")
     total = round(dur(audio) + 0.75, 2)
     fout = round(total - 0.5, 2)

@@ -108,7 +108,7 @@ A full multi-agent turn (concierge + 3 merchant Gemini calls + UCP assemble/book
 | Reasoning | **Gemini 2.5 Flash on Vertex AI** (`gemini-2.5-flash`, runtime service account) |
 | Agents talking | **A2A** (Agent2Agent) — cross-process `NegotiationRequest` DataParts between Cloud Run services (`a2a-sdk`) |
 | Commerce | **UCP** (Universal Commerce Protocol) — `/.well-known/ucp` + `search_catalog` / `create_checkout` / `complete_checkout` |
-| Money trust | **AP2** (Agent Payments Protocol) — signed Intent → Cart → Payment mandate chain (signatures simulated) |
+| Money trust | **AP2** (Agent Payments Protocol) — signed Intent → Cart → Payment mandate chain (real ECDSA P-256; demo keypair) |
 | Tool binding | **MCP** (JSON-RPC 2.0) — UCP ops via `tools/call` |
 | Reliability toolchain | **ADK eval + evalset in CI** · semantic **`final_response_match_v2`** judge · per-turn cost/latency + **Cloud Trace** |
 | Runtime | **Google Cloud Run × 4** (asia-south1), FastAPI, scale-to-zero |
@@ -134,4 +134,4 @@ A full multi-agent turn (concierge + 3 merchant Gemini calls + UCP assemble/book
 
 ## Honesty disclosure
 
-**AP2 mandate signing is simulated.** Signatures use a `STUB-SIG:` SHA-256 placeholder — **not** real ECDSA P-256 cryptography — so no real money moves and no live payment rail is ever called. What *is* real: the mandate **structure** (Intent → Cart → Payment) is live, and the server-side **verification genuinely runs** — the merchant recomputes the expected signature and rejects any cart or payment whose hashed fields were tampered with (`verify_cart_mandate` / `verify_payment_mandate` in `odyssey/protocols/ap2_adapter.py`). The only thing simulated is the *cryptographic primitive*: a SHA-256 recompute-and-compare stands in for an ECDSA verification, so the chain validates field integrity but is not yet cryptographically binding. Swapping in real ECDSA P-256 signing + verification is a roadmap library swap, not a redesign.
+**AP2 mandates are signed with real ECDSA P-256.** Cart and payment mandates are signed and verified with real ECDSA over the P-256 curve (`cryptography`); tampering with any hashed field fails verification (`verify_cart_mandate` / `verify_payment_mandate` in `odyssey/protocols/ap2_adapter.py`). For the demo, a single **deterministic keypair** is shared across the concierge and merchant processes — a production deployment would issue per-party keys / use a PKI. **No real money moves** and no live payment rail is ever called; set `ODYSSEY_AP2_SIGNING=stub` for the legacy SHA-256 placeholder.

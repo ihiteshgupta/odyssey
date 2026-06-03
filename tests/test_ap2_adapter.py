@@ -1,6 +1,6 @@
 from odyssey.common.types import Money
 from odyssey.protocols.ap2_adapter import (
-    STUB_PREFIX,
+    ECDSA_PREFIX,
     build_cart_mandate,
     build_intent_mandate,
     build_payment_mandate,
@@ -16,13 +16,13 @@ def test_intent_mandate_has_description_and_expiry():
 
 def test_cart_mandate_merchant_signed_and_verifiable():
     cm = build_cart_mandate("c1", "Bali Beach Resort", Money("USD", 640.0), "Hotel", expiry_minutes=15)
-    assert cm.merchant_authorization.startswith(STUB_PREFIX) and verify_cart_mandate(cm) is True
+    assert cm.merchant_authorization.startswith(ECDSA_PREFIX) and verify_cart_mandate(cm) is True
 
 
 def test_payment_mandate_user_signed_and_verifiable():
     cm = build_cart_mandate("c1", "X", Money("USD", 10.0), "Y", 15)
     pm = build_payment_mandate(cart=cm, merchant_agent="hotel_merchant")
-    assert pm.user_authorization.startswith(STUB_PREFIX) and verify_payment_mandate(pm, cart=cm) is True
+    assert pm.user_authorization.startswith(ECDSA_PREFIX) and verify_payment_mandate(pm, cart=cm) is True
 
 
 def test_tampered_cart_fails_verification():

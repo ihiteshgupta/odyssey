@@ -17,7 +17,7 @@ flowchart TB
     end
 
     amadeus[("Amadeus Self-Service<br/>flights · hotels · activities<br/>(LIVE / SEED fallback)")]
-    ap2["**AP2 mandate chain** (simulated)<br/>Intent ▶ Cart ▶ Payment<br/>authorization · authenticity · accountability"]
+    ap2["**AP2 mandate chain** (ECDSA-P256)<br/>Intent ▶ Cart ▶ Payment<br/>authorization · authenticity · accountability"]
 
     user -->|"chat"| concierge
     concierge -->|"A2A: budget slice + constraints<br/>(NegotiationRequest DataPart)"| flight

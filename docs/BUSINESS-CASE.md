@@ -146,10 +146,10 @@ commitments price out — and does so natively on the 2026 AI-agent commerce sta
 |------------|--------|
 | Multi-agent A2A negotiation across 3 merchant Cloud Run services | **Live** (verified cross-process, 2026-06-02) |
 | UCP checkout (create + complete) via MCP/JSON-RPC | **Live** |
-| Deny-by-default guardrail + non-skippable HITL confirmation | **Live** (59 tests, safety eval block-rate 100%) |
-| AP2 Intent → Cart → Payment mandate chain | **Live structure; signatures simulated** (`STUB-SIG:` SHA-256 — NOT real ECDSA) |
+| Deny-by-default guardrail + non-skippable HITL confirmation | **Live** (78 tests, safety eval block-rate 100%) |
+| AP2 Intent → Cart → Payment mandate chain | **Live — signed with real ECDSA P-256** (single demo keypair; production = per-party keys / PKI) |
 | Public demo on Google Cloud Run (asia-south1) | **Live** at https://odyssey-concierge-4ha6ffo6hq-el.a.run.app |
-| Real payment cryptography (ECDSA P-256) | **Roadmap** — design is correct, real signing is a library swap |
+| Real payment cryptography (ECDSA P-256) | **Done** — mandates signed & verified with ECDSA P-256 (`cryptography`); per-party keys / PKI is the production step |
 | Live Amadeus inventory (flights / hotels / activities) | **Roadmap** — connector built, SEED fallback active by default |
 | Multi-round counter-offer negotiation | **Roadmap** (Phase 2) |
 | CartMandate expiry / re-quote | **Roadmap** (Phase 2) |

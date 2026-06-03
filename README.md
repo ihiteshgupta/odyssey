@@ -2,7 +2,7 @@
 
 **Odyssey is the trust-and-control layer for autonomous business travel — a multi-agent
 concierge that negotiates and books budget-respecting, multi-vendor trips across flights,
-hotels and activities, but spends nothing without a human-confirmed, signed (simulated, disclosed below)
+hotels and activities, but spends nothing without a human-confirmed, ECDSA-P256-signed
 mandate that gives finance a non-repudiable audit trail and a budget it cannot exceed.**
 
 Built for the **Google for Startups AI Agents Challenge · Track 2: Optimize (Existing Agents) · Region: APAC**.
@@ -10,8 +10,8 @@ Built for the **Google for Startups AI Agents Challenge · Track 2: Optimize (Ex
 **Live demo (public):** https://odyssey-concierge-4ha6ffo6hq-el.a.run.app — pick `concierge`, ask
 for a trip. (Cloud Run scale-to-zero — first request may cold-start a few seconds.)
 
-> ⚠️ **Demo / hackathon project.** AP2 payments are **simulated** — signatures are stubbed and
-> clearly labelled (`STUB-SIG:`). **No real money moves and no live payment rail is called.**
+> ⚠️ **Demo / hackathon project.** AP2 mandates are signed with **real ECDSA P-256** (a single
+> deterministic demo keypair; production uses per-party keys / a PKI). **No real money moves and no live payment rail is called.**
 
 ---
 
@@ -95,7 +95,7 @@ A2A — a separate Cloud Run service, not in-process. Concierge logs confirm
 |----------|-----------------|
 | **A2A** | Concierge → merchant `NegotiationRequest` (budget slice + constraints); cross-process between Cloud Run services |
 | **UCP** | Each merchant exposes `/.well-known/ucp` + MCP endpoint (`search_catalog`, `create_checkout`, `complete_checkout`) |
-| **AP2** | Signed Intent → Cart → Payment mandate chain; merchant verifies user-signed `PaymentMandate` before confirming (signatures simulated) |
+| **AP2** | Signed Intent → Cart → Payment mandate chain; merchant verifies the user-signed `PaymentMandate` before confirming (real ECDSA P-256; demo keypair) |
 | **Gemini 2.5 Flash / Vertex AI** | Concierge dialogue + each merchant agent's tool-calling |
 | **MCP (JSON-RPC 2.0)** | UCP operations invoked via `tools/call` |
 | **ADK** | Agent framework, `before_tool_callback` guardrail, `require_confirmation` HITL gate |
@@ -122,7 +122,7 @@ flowchart TB
     end
 
     amadeus[("Amadeus Self-Service<br/>flights · hotels · activities<br/>(LIVE / SEED fallback)")]
-    ap2["**AP2 mandate chain** (simulated)<br/>Intent ▶ Cart ▶ Payment<br/>authorization · authenticity · accountability"]
+    ap2["**AP2 mandate chain** (ECDSA-P256)<br/>Intent ▶ Cart ▶ Payment<br/>authorization · authenticity · accountability"]
 
     user -->|"chat"| concierge
     concierge -->|"A2A: budget slice + constraints<br/>(NegotiationRequest DataPart)"| flight
@@ -220,9 +220,9 @@ simulated-only check confirming no real payment system is ever called. An ADK ev
 
 Full methodology and reproduction steps: [`docs/EVAL.md`](docs/EVAL.md).
 
-> ⚠️ **Simulated payments.** AP2 signatures use `STUB-SIG:` SHA-256 — NOT real ECDSA P-256
-> cryptography. No real money moves. Real ECDSA signing is roadmap; the mandate structure
-> and server-side verification logic are in place.
+> ⚠️ **No real money.** AP2 mandates are signed with **real ECDSA P-256** (`cryptography`), using a
+> single deterministic demo keypair shared across processes (production uses per-party keys / a PKI).
+> No real money moves and no live payment rail is ever called (`ODYSSEY_AP2_SIGNING=stub` reverts to the SHA-256 placeholder).
 
 ---
 

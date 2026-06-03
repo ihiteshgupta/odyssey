@@ -35,6 +35,7 @@ packages = ["odyssey"]
 
 [tool.ruff]
 line-length = 100
+extend-exclude = ["video-build"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I"]

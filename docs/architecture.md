@@ -6,7 +6,7 @@ human-approved, cryptographically-signed mandate.**
 A planner **Concierge** agent (ADK + Gemini on Vertex AI) negotiates over **A2A** with three independent
 merchant agents (flight / hotel / activities), each a **UCP** merchant over Amadeus inventory. Every
 purchase passes two gates — a **deny-by-default budget/cart guardrail** and a **non-skippable human
-confirmation** — and settles via **AP2** signed Intent → Cart → Payment mandates (simulated). All four
+confirmation** — and settles via **AP2** signed Intent → Cart → Payment mandates (real ECDSA P-256; demo keypair). All four
 services run on **Google Cloud Run (asia-south1)**.
 
 ```mermaid
@@ -29,7 +29,7 @@ flowchart TB
     end
 
     amadeus[("Amadeus Self-Service<br/>flights · hotels · activities<br/>(LIVE / SEED fallback)")]
-    ap2["**AP2 mandate chain** (simulated)<br/>Intent ▶ Cart ▶ Payment<br/>authorization · authenticity · accountability"]
+    ap2["**AP2 mandate chain** (ECDSA-P256)<br/>Intent ▶ Cart ▶ Payment<br/>authorization · authenticity · accountability"]
 
     user -->|"chat"| concierge
     concierge -->|"A2A: budget slice + constraints<br/>(NegotiationRequest DataPart)"| flight
@@ -63,7 +63,7 @@ flowchart TB
 |---|---|---|
 | Agents talking | **A2A** (Agent2Agent) | Concierge sends each merchant agent a `NegotiationRequest` (budget slice + constraints) as a `DataPart`; the merchant's own Gemini agent answers with its `find_offers` result. Cross-process, between separate Cloud Run services. |
 | Commerce nouns/verbs | **UCP** (Universal Commerce Protocol) | Each merchant exposes `/.well-known/ucp` + an MCP/JSON-RPC `/mcp` endpoint (`search_catalog`, `create_checkout`, `complete_checkout`, …). The concierge assembles + books through these. |
-| Money trust | **AP2** (Agent Payments Protocol) | Every purchase is a signed **Intent → Cart → Payment** mandate chain; the merchant verifies the user-signed PaymentMandate server-side before confirming. Signatures are **simulated** (`STUB-SIG:`) — no real money. |
+| Money trust | **AP2** (Agent Payments Protocol) | Every purchase is a signed **Intent → Cart → Payment** mandate chain; the merchant verifies the user-signed PaymentMandate server-side before confirming. Signatures are **real ECDSA P-256** (`cryptography`, demo keypair) — no real money moves. |
 | Reasoning | **Gemini 2.5 Flash on Vertex AI** | Concierge dialogue + each merchant agent's tool-calling. |
 | Tool binding | **MCP** (JSON-RPC 2.0) | UCP operations are invoked via `tools/call`. |
 
