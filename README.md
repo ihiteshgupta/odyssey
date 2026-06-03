@@ -1,5 +1,7 @@
 # Odyssey
 
+![Odyssey — autonomous corporate travel with a trust layer](docs/cover.png)
+
 **Odyssey is the trust-and-control layer for autonomous business travel — a multi-agent
 concierge that negotiates and books budget-respecting, multi-vendor trips across flights,
 hotels and activities, but spends nothing without a human-confirmed, ECDSA-P256-signed
