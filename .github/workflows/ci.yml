@@ -33,13 +33,52 @@ jobs:
         env:
           ODYSSEY_DATA_MODE: SEED
         run: uv run pytest -q
-        # The deterministic safety eval (tests/test_safety_eval.py) and all 43
-        # existing tests run fully offline in SEED mode. Tests marked with
-        # @pytest.mark.skipif(not os.environ.get("GOOGLE_API_KEY"), ...) are
-        # automatically skipped here — that is expected (2 skipped, all else passing).
+        # The deterministic safety eval (tests/test_safety_eval.py) and all
+        # existing tests run fully offline in SEED mode. Tests guarded by
+        # @pytest.mark.skipif(not os.environ.get("GOOGLE_API_KEY"), ...) —
+        # including the ADK AgentEvaluator harness (tests/test_adk_eval.py),
+        # which drives evals/odyssey.evalset.json through Google's
+        # AgentEvaluator against the test_config.json thresholds — are
+        # automatically skipped here. That is expected (3 skipped, all else
+        # passing); none of them require creds to COLLECT, so CI stays green.
 
-      # NOTE: The ADK happy-path evalset (evals/odyssey.evalset.json) is NOT run
-      # in CI because it requires a live Gemini/Vertex AI key. To run it locally:
-      #   export GOOGLE_API_KEY=<your-key>
-      #   export ODYSSEY_DATA_MODE=SEED
-      #   adk eval deploy_agents/concierge evals/odyssey.evalset.json
+  # Optional: run the ADK happy-path evalset through the live Gemini backend.
+  # Only runs when a GOOGLE_API_KEY repo secret is configured; otherwise the
+  # job is skipped. `continue-on-error` ensures the live eval can never fail
+  # the required CI (it is a quality signal, not a gate).
+  adk-eval:
+    name: ADK Eval (optional — needs GOOGLE_API_KEY secret)
+    runs-on: ubuntu-latest
+    needs: test
+    if: ${{ github.repository_owner != '' }}
+    continue-on-error: true
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v3
+        with:
+          version: "latest"
+
+      - name: Install dependencies
+        run: uv pip install -e ".[dev]" --system
+
+      - name: ADK eval (skips automatically without creds)
+        env:
+          ODYSSEY_DATA_MODE: SEED
+          GOOGLE_API_KEY: ${{ secrets.GOOGLE_API_KEY }}
+        run: |
+          if [ -z "$GOOGLE_API_KEY" ]; then
+            echo "No GOOGLE_API_KEY secret set — skipping live ADK eval."
+            exit 0
+          fi
+          # Verified agent module path: odyssey.concierge.agent
+          #   (ends with `.agent`, exposes `root_agent` — required by
+          #    AgentEvaluator._get_agent_for_eval in google-adk 2.1.0).
+          uv run pytest -q tests/test_adk_eval.py

@@ -13,9 +13,13 @@ from __future__ import annotations
 
 import asyncio
 import json
+import logging
 import re
+import time
 
 from odyssey.common.types import Intent, Vertical
+
+log = logging.getLogger("odyssey.a2a")
 
 
 def _request_payload(
@@ -93,6 +97,59 @@ def _parts_to_result(parts: list) -> dict | None:
     return None
 
 
+def _extract_usage(parts: list) -> dict | None:
+    """Pull the merchant LLM ``usage_metadata`` threaded across A2A, if present.
+
+    The merchant's ``after_model_callback`` emits the real token counts either as
+    a ``DataPart`` (``.data.usage_metadata``) or, on the to_a2a text path, as a
+    ``__odyssey_usage__`` JSON sentinel in a ``TextPart``. Returns the usage dict
+    (``prompt_token_count`` / ``candidates_token_count`` / ``total_token_count``)
+    or ``None`` when the framework dropped it (then the caller estimates).
+    """
+    for part in parts or []:
+        root = getattr(part, "root", part)
+        data = getattr(root, "data", None)
+        if isinstance(data, dict):
+            usage = data.get("usage_metadata") or data.get("__odyssey_usage__")
+            if isinstance(usage, dict):
+                return usage
+        text = getattr(root, "text", None)
+        if text and "__odyssey_usage__" in text:
+            m = re.search(r"\{.*\}", text, re.DOTALL)
+            if not m:
+                continue
+            try:
+                usage = json.loads(m.group(0)).get("__odyssey_usage__")
+            except (json.JSONDecodeError, ValueError):
+                continue
+            if isinstance(usage, dict):
+                return usage
+    return None
+
+
+def _estimate_usage(prompt_text: str, response_text: str) -> dict:
+    """Deterministic ~4-chars/token estimate, used only when the real merchant
+    ``usage_metadata`` didn't survive the A2A hop. Flagged ``estimated`` so the
+    cost log is honest about the source."""
+    return {
+        "prompt_token_count": max(1, len(prompt_text or "") // 4),
+        "candidates_token_count": max(1, len(response_text or "") // 4),
+        "estimated": True,
+    }
+
+
+def _result_with_usage(parts: list, prompt_text: str) -> dict | None:
+    """``_parts_to_result`` + attach a ``_odyssey_usage`` (real if threaded, else
+    estimated) so the concierge can log a real cost/turn number."""
+    result = _parts_to_result(parts)
+    if result is None:
+        return None
+    usage = _extract_usage(parts) or _estimate_usage(prompt_text, json.dumps(result))
+    result = dict(result)
+    result["_odyssey_usage"] = usage
+    return result
+
+
 async def _negotiate_async(
     url: str,
     vertical: Vertical,
@@ -120,6 +177,7 @@ async def _negotiate_async(
         f"and budget_slice={slice_amount}, "
         "and return its JSON result verbatim."
     )
+    prompt_text = json.dumps(payload) + instruction
 
     async with httpx.AsyncClient(timeout=30.0) as http:
         card = await A2ACardResolver(
@@ -147,12 +205,12 @@ async def _negotiate_async(
                 task, _update = event
                 # Check task artifacts first
                 for artifact in task.artifacts or []:
-                    result = _parts_to_result(artifact.parts or [])
+                    result = _result_with_usage(artifact.parts or [], prompt_text)
                     if result is not None:
                         return result
                 # Then task history messages
                 for hist_msg in task.history or []:
-                    result = _parts_to_result(hist_msg.parts or [])
+                    result = _result_with_usage(hist_msg.parts or [], prompt_text)
                     if result is not None:
                         return result
                     for part in hist_msg.parts or []:
@@ -162,7 +220,7 @@ async def _negotiate_async(
                             last_text = text
             else:
                 # Direct Message reply
-                result = _parts_to_result(event.parts or [])
+                result = _result_with_usage(event.parts or [], prompt_text)
                 if result is not None:
                     return result
                 for part in event.parts or []:
@@ -176,6 +234,8 @@ async def _negotiate_async(
             raise ValueError(
                 "A2A merchant returned no parseable NegotiationResponse"
             )
+        result = dict(result)
+        result["_odyssey_usage"] = _estimate_usage(prompt_text, last_text)
         return result
 
 
@@ -206,11 +266,22 @@ def a2a_negotiate(
             _negotiate_async(url, vertical, intent, slice_amount, context_id)
         )
 
+    # Observability: time the full A2A round-trip (in-loop or threaded path).
+    _t0 = time.perf_counter()
     try:
-        asyncio.get_running_loop()
-    except RuntimeError:
-        return _run()
-    import concurrent.futures
+        try:
+            asyncio.get_running_loop()
+        except RuntimeError:
+            return _run()
+        import concurrent.futures
 
-    with concurrent.futures.ThreadPoolExecutor(max_workers=1) as ex:
-        return ex.submit(_run).result()
+        with concurrent.futures.ThreadPoolExecutor(max_workers=1) as ex:
+            return ex.submit(_run).result()
+    finally:
+        roundtrip_ms = round((time.perf_counter() - _t0) * 1000, 1)
+        log.info(
+            "a2a_roundtrip_ms=%s merchant=%s slice=%s",
+            roundtrip_ms,
+            vertical.value,
+            slice_amount,
+        )

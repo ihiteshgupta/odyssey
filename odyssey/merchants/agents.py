@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import asyncio
+import json
+import logging
 import os
 
 from fastapi.testclient import TestClient as _UcpTestClient
@@ -8,13 +10,22 @@ from google.adk.a2a.utils.agent_card_builder import AgentCardBuilder
 from google.adk.a2a.utils.agent_to_a2a import to_a2a
 from google.adk.agents import LlmAgent
 from google.adk.tools import FunctionTool
+from google.genai import types
 
 from odyssey.common.types import Vertical
 from odyssey.merchants.sources import make_source
 from odyssey.merchants.ucp_server import attach_ucp_routes, make_ucp_app
 from odyssey.protocols.ucp_client import UCPClient
 
+log = logging.getLogger("odyssey.merchant")
+
 MODEL = "gemini-2.5-flash"
+
+# Thread the merchant's real LLM token usage to the concierge across A2A by
+# appending it as a `__odyssey_usage__` sentinel part on the final response.
+# On by default; set ODYSSEY_THREAD_USAGE=0 to capture-and-log only (no mutation
+# of the response path) if you want the merchant reply left byte-for-byte intact.
+_THREAD_USAGE = os.getenv("ODYSSEY_THREAD_USAGE", "1") != "0"
 _PORT = {Vertical.FLIGHT: 8001, Vertical.HOTEL: 8002, Vertical.ACTIVITY: 8003}
 
 # Env vars each merchant reads at import time to stamp its own public URL into
@@ -56,6 +67,52 @@ def negotiate_offers(vertical: Vertical, query: str, budget_slice: float) -> dic
     }
 
 
+def _usage_after_model_cb(vertical: Vertical):
+    """ADK ``after_model_callback`` that surfaces the merchant's real LLM token
+    usage. It always logs the counts server-side, and (unless ODYSSEY_THREAD_USAGE=0)
+    appends a ``__odyssey_usage__`` sentinel text part to the FINAL response so the
+    counts survive the to_a2a hop to the concierge. Fully guarded: any failure
+    leaves the response untouched so the merchant can never break."""
+
+    def _after_model(callback_context, llm_response):
+        try:
+            usage = getattr(llm_response, "usage_metadata", None)
+            if usage is None:
+                return None
+            pt = getattr(usage, "prompt_token_count", None)
+            ct = getattr(usage, "candidates_token_count", None)
+            tt = getattr(usage, "total_token_count", None)
+            log.info(
+                "merchant_llm[%s] prompt_tokens=%s output_tokens=%s total_tokens=%s",
+                vertical.value, pt, ct, tt,
+            )
+            content = getattr(llm_response, "content", None)
+            if not _THREAD_USAGE or content is None:
+                return None
+            parts = list(getattr(content, "parts", None) or [])
+            # Skip the tool-CALL turn; only stamp usage onto the final answer.
+            if any(getattr(p, "function_call", None) for p in parts):
+                return None
+            sentinel = types.Part(
+                text=json.dumps(
+                    {
+                        "__odyssey_usage__": {
+                            "prompt_token_count": pt,
+                            "candidates_token_count": ct,
+                            "total_token_count": tt,
+                        }
+                    }
+                )
+            )
+            content.parts = parts + [sentinel]
+            return llm_response
+        except Exception as e:  # never break the merchant response path
+            log.debug("merchant usage threading skipped (%s)", e)
+            return None
+
+    return _after_model
+
+
 def _make_merchant_agent(vertical: Vertical) -> LlmAgent:
     def find_offers(query: str, budget_slice: float) -> dict:
         """Find offers within a budget slice; returns a JSON fit signal + offers.
@@ -74,6 +131,7 @@ def _make_merchant_agent(vertical: Vertical) -> LlmAgent:
             "fences, nothing before or after the '{...}'. Never invent prices or fields."
         ),
         tools=[FunctionTool(find_offers)],
+        after_model_callback=_usage_after_model_cb(vertical),
     )
 
 

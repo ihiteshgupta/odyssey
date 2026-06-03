@@ -1,0 +1,45 @@
+flowchart TB
+    user(["Traveler<br/>'Book Bali under $2,500'"])
+
+    subgraph cr["Google Cloud Run · asia-south1"]
+        direction TB
+        concierge["**Concierge agent**<br/>ADK · gemini-2.5-flash (Vertex AI)<br/>intent → allocate budget → negotiate → assemble → book"]
+
+        subgraph gates["the booking must pass BOTH gates"]
+            direction LR
+            guard{{"Deny-by-default<br/>budget + cart guardrail"}}
+            hitl{{"Non-skippable<br/>human confirmation"}}
+        end
+
+        flight["**flight-agent**<br/>A2A + UCP merchant"]
+        hotel["**hotel-agent**<br/>A2A + UCP merchant"]
+        activity["**activities-agent**<br/>A2A + UCP merchant"]
+    end
+
+    amadeus[("Amadeus Self-Service<br/>flights · hotels · activities<br/>(LIVE / SEED fallback)")]
+    ap2["**AP2 mandate chain** (simulated)<br/>Intent ▶ Cart ▶ Payment<br/>authorization · authenticity · accountability"]
+
+    user -->|"chat"| concierge
+    concierge -->|"A2A: budget slice + constraints<br/>(NegotiationRequest DataPart)"| flight
+    concierge -->|"A2A"| hotel
+    concierge -->|"A2A"| activity
+    flight -->|"offers + fit signal"| concierge
+    hotel --> concierge
+    activity --> concierge
+
+    flight -.->|"UCP create/complete_checkout (MCP/JSON-RPC)"| concierge
+    hotel -.-> concierge
+    activity -.-> concierge
+
+    flight --> amadeus
+    hotel --> amadeus
+    activity --> amadeus
+
+    concierge --> guard --> hitl
+    hitl -->|"approved → UCP complete_checkout<br/>(merchant verifies the signed mandate)"| hotel
+    concierge -.->|"signs / verifies"| ap2
+
+    classDef gate fill:#ffe2e2,stroke:#d33,stroke-width:2px;
+    class guard,hitl gate;
+    classDef agent fill:#e8f0fe,stroke:#4285f4,stroke-width:1px;
+    class concierge,flight,hotel,activity agent;
