@@ -101,11 +101,20 @@ def _to_offer(d: dict) -> Offer:
     )
 
 
+# A well-formed NegotiationResponse from a merchant must carry these.
+_REQUIRED_KEYS = ("offers", "fits", "cheapest")
+
+
 def _raw_to_response(raw: dict, currency: str) -> NegotiationResponse:
+    # Defensive: never KeyError on a partial dict — derive sane values instead.
+    offers = [_to_offer(o) for o in raw.get("offers", [])]
+    cheapest = raw.get("cheapest")
+    if cheapest is None:
+        cheapest = min((o.price.amount for o in offers), default=0.0)
     return NegotiationResponse(
-        offers=[_to_offer(o) for o in raw["offers"]],
-        fits=raw["fits"],
-        cheapest=Money(currency, float(raw["cheapest"])),
+        offers=offers,
+        fits=bool(raw.get("fits", bool(offers))),
+        cheapest=Money(currency, float(cheapest)),
         nearest_above=(
             Money(currency, float(raw["nearest_above"]))
             if raw.get("nearest_above") is not None
@@ -169,17 +178,33 @@ def request_offers(
     if url:
         raw = _a2a_with_retry(url, vertical, intent, slice_amount, context_id)
         if raw is not None:
+            # A coercible-but-incomplete A2A response (e.g. offers without fits/cheapest)
+            # is a contract violation, NOT a usable result. Under STRICT, surface it;
+            # otherwise degrade to in-process rather than crashing on a missing key later.
+            missing = [k for k in _REQUIRED_KEYS if k not in raw]
+            if missing:
+                if A2A_STRICT:
+                    raise ValueError(
+                        f"negotiate[{vertical.value}] A2A response missing keys {missing}"
+                    )
+                log.warning(
+                    "negotiate[%s] A2A response missing %s; degrading to in-process",
+                    vertical.value,
+                    missing,
+                )
+                raw = None
+        if raw is not None:
             log.info(
                 "negotiate[%s] via A2A slice=%.0f fits=%s",
                 vertical.value,
                 slice_amount,
-                raw["fits"],
+                raw.get("fits"),
             )
             _log_estimated_cost(vertical, raw)
             return _raw_to_response(raw, cur)
     raw = negotiate_offers(vertical, query=intent.destination, budget_slice=slice_amount)
     log.info(
-        "negotiate[%s] in-process slice=%.0f fits=%s", vertical.value, slice_amount, raw["fits"]
+        "negotiate[%s] in-process slice=%.0f fits=%s", vertical.value, slice_amount, raw.get("fits")
     )
     _log_estimated_cost(vertical, raw)
     return _raw_to_response(raw, cur)

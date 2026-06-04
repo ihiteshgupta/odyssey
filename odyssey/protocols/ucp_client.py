@@ -28,6 +28,15 @@ class UCPClient:
                 "params": {"name": name, "arguments": arguments},
             },
         ).json()
-        if "error" in resp:
+        # JSON-RPC envelope-level error (rare for this server).
+        if isinstance(resp, dict) and resp.get("error"):
             raise RuntimeError(f"UCP transport error: {resp['error']}")
-        return resp["result"]
+        result = resp.get("result")
+        if result is None:
+            raise RuntimeError(f"UCP malformed response (no result): {resp}")
+        # Dispatch-level errors are returned nested under `result` as a sole
+        # {"error": ...} entry — surface them so callers get a clean RuntimeError
+        # instead of a KeyError on result["checkout"] / result["products"].
+        if isinstance(result, dict) and set(result) == {"error"}:
+            raise RuntimeError(f"UCP error: {result['error']}")
+        return result
