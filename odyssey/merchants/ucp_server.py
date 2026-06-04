@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 import uuid
 
 from ap2.models.mandate import CartMandate, PaymentMandate  # noqa: F401 (used via model_validate)
@@ -15,6 +16,11 @@ from odyssey.protocols.ap2_adapter import (
     verify_payment_mandate,
 )
 
+# State-changing UCP ops require a shared-secret token WHEN one is configured via
+# ODYSSEY_UCP_TOKEN. Opt-in so local/SEED demos and tests keep working with no token,
+# but a deployed (publicly reachable) merchant can require it to stop anonymous booking.
+_MUTATING_OPS = {"create_checkout", "complete_checkout", "cancel_checkout", "update_checkout"}
+
 
 def build_dispatch(name: str, vertical: Vertical, source: CatalogSource):
     """Return a dispatch(op, args) -> dict closure with mutable per-merchant state.
@@ -22,7 +28,12 @@ def build_dispatch(name: str, vertical: Vertical, source: CatalogSource):
     Factored out so Task 9 can attach the same handler to a combined A2A+UCP app.
     """
     carts: dict[str, dict] = {}
-    seen_keys: set[str] = set()
+    # Idempotency records are namespaced per outcome so a cancel can never satisfy a
+    # later complete (or vice versa). `completed` stores the confirmed order so a replay
+    # returns the identical confirmation — and a key is only recorded AFTER its operation
+    # succeeds (verification included).
+    completed: dict[str, dict] = {}
+    canceled_keys: set[str] = set()
 
     def _offer_dict(o):
         return {
@@ -33,6 +44,11 @@ def build_dispatch(name: str, vertical: Vertical, source: CatalogSource):
         }
 
     def dispatch(op: str, args: dict) -> dict:
+        required_token = os.environ.get("ODYSSEY_UCP_TOKEN")
+        if op in _MUTATING_OPS and required_token:
+            if (args.get("meta") or {}).get("ucp-token") != required_token:
+                return {"error": "unauthorized: invalid or missing ucp-token"}
+
         if op == "search_catalog":
             mp = (args.get("filters") or {}).get("max_price")
             return {"products": [_offer_dict(o) for o in source.search(args.get("query", ""), mp)]}
@@ -42,7 +58,12 @@ def build_dispatch(name: str, vertical: Vertical, source: CatalogSource):
             return {"products": [_offer_dict(o) for i in ids if (o := source.get(i))]}
 
         if op == "create_checkout":
-            offer = source.get(args["checkout"]["items"][0]["id"])
+            items = (args.get("checkout") or {}).get("items") or []
+            if not items or not isinstance(items[0], dict) or "id" not in items[0]:
+                return {"error": "create_checkout requires checkout.items[0].id"}
+            offer = source.get(items[0]["id"])
+            if offer is None:  # stale/unknown id → clean error, not an AttributeError/500
+                return {"error": f"unknown offer id {items[0]['id']}"}
             cid = f"ck-{uuid.uuid4().hex[:8]}"
             cm = build_cart_mandate(cid, name, offer.price, offer.title)
             template = build_payment_mandate(cart=cm, merchant_agent=f"{vertical.value}_merchant")
@@ -66,14 +87,23 @@ def build_dispatch(name: str, vertical: Vertical, source: CatalogSource):
             key = (args.get("meta") or {}).get("idempotency-key")
             if not key:
                 return {"error": "missing idempotency-key"}
-            if key in seen_keys:
-                return {"order": {"status": "confirmed", "idempotent_replay": True,
-                                  "confirmation": f"OD-{(args.get('id') or '')[-6:].upper()}"}}
-            cart = carts.get(args["id"])
+            cid = args.get("id")
+
             if op == "cancel_checkout":
-                seen_keys.add(key)
-                carts.pop(args["id"], None)
+                if key in canceled_keys:
+                    return {"order": {"status": "canceled", "idempotent_replay": True}}
+                if key in completed:
+                    return {"error": "idempotency-key already used for a completed checkout"}
+                canceled_keys.add(key)
+                carts.pop(cid, None)
                 return {"order": {"status": "canceled"}}
+
+            # complete_checkout — replay only a previously CONFIRMED order (set after verify).
+            if key in completed:
+                return {"order": {**completed[key], "idempotent_replay": True}}
+            if key in canceled_keys:
+                return {"error": "idempotency-key already used for a canceled checkout"}
+            cart = carts.get(cid)
             if cart is None:
                 return {"error": "unknown checkout id"}
             pm_dict = (args.get("checkout") or {}).get("payment_mandate")
@@ -82,14 +112,13 @@ def build_dispatch(name: str, vertical: Vertical, source: CatalogSource):
             pm = PaymentMandate.model_validate(pm_dict)
             if not verify_payment_mandate(pm, cart=cart["cart_mandate"]):
                 return {"error": "mandate verification failed"}
-            seen_keys.add(key)
-            return {
-                "order": {
-                    "status": "confirmed",
-                    "id": args["id"],
-                    "confirmation": f"OD-{args['id'][-6:].upper()}",
-                }
+            order = {
+                "status": "confirmed",
+                "id": cid,
+                "confirmation": f"OD-{(cid or '')[-6:].upper()}",
             }
+            completed[key] = order
+            return {"order": order}
 
         return {"error": f"unknown op {op}"}
 
